@@ -1,0 +1,11 @@
+{
+  // Keep "version" in sync with package.json's version by hand: a release
+  // is just bumping both and pushing to main.
+  "name": "@typicalninja/yalp",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": "./src/index.ts",
+  "publish": {
+    "include": ["src", "README.md", "LICENSE", "jsr.jsonc"],
+  },
+}
