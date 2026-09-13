@@ -1,10 +1,10 @@
 # yalp
 
-[![npm version](https://img.shields.io/npm/v/yalp.svg?style=flat)](https://www.npmjs.com/package/yalp)
-[![npm downloads](https://img.shields.io/npm/dm/yalp.svg?style=flat)](https://www.npmjs.com/package/yalp)
-[![JSR](https://jsr.io/badges/@typicalninja/yalp)](https://jsr.io/@typicalninja/yalp)
+[![npm version](https://img.shields.io/npm/v/yalp-js.svg?style=flat)](https://www.npmjs.com/package/yalp-js)
+[![npm downloads](https://img.shields.io/npm/dm/yalp-js.svg?style=flat)](https://www.npmjs.com/package/yalp-js)
+[![JSR](https://jsr.io/badges/@typical/yalp)](https://jsr.io/@typical/yalp)
 [![CI](https://github.com/typicalninja/yalp/actions/workflows/ci.yml/badge.svg)](https://github.com/typicalninja/yalp/actions/workflows/ci.yml)
-[![license](https://img.shields.io/npm/l/yalp.svg?style=flat)](./LICENSE)
+[![license](https://img.shields.io/npm/l/yalp-js.svg?style=flat)](./LICENSE)
 
 Simple opinionated framework for building command-line apps.
 
@@ -26,9 +26,9 @@ runtime dependencies, fully typed end to end.
 ## Install
 
 ```sh
-npm install yalp
-pnpm add yalp
-bun add yalp
+npm install yalp-js
+pnpm add yalp-js
+bun add yalp-js
 ```
 
 ## Usage
@@ -36,7 +36,7 @@ bun add yalp
 A single command:
 
 ```ts
-import { defineCommand, run } from "yalp";
+import { defineCommand, run } from "yalp-js";
 
 const cli = defineCommand({
   name: "greet",
@@ -64,7 +64,7 @@ HELLO, ADA!
 Subcommands:
 
 ```ts
-import { defineCommand, run } from "yalp";
+import { defineCommand, run } from "yalp-js";
 
 const add = defineCommand({
   name: "add",

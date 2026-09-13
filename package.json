@@ -1,5 +1,5 @@
 {
-  "name": "yalp",
+  "name": "yalp-js",
   "version": "1.0.0",
   "description": "Simple opinionated framework for building command-line apps",
   "keywords": [
