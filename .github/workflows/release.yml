@@ -1,4 +1,4 @@
-name: Release
+name: Release (NPM)
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 permissions:
+  id-token: write  # Required for OIDC
   contents: read
-  id-token: write
 
 jobs:
   release:
@@ -23,11 +23,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-          cache: pnpm
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false  # never use caching in release builds
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
-      - name: Publish to npm
-        run: npm publish --provenance
+      - name: Stage publish to npm
+        run: npm stage publish
