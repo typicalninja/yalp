@@ -1,7 +1,7 @@
 {
   "name": "yalp-js",
   "version": "1.0.1",
-  "description": "Simple opinionated framework for building command-line apps",
+  "description": "Simple, opinionated framework for building command-line apps.",
   "keywords": [
     "args",
     "argv",

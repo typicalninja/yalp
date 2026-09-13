@@ -6,21 +6,14 @@
 [![CI](https://github.com/typicalninja/yalp/actions/workflows/ci.yml/badge.svg)](https://github.com/typicalninja/yalp/actions/workflows/ci.yml)
 [![license](https://img.shields.io/npm/l/yalp-js.svg?style=flat)](./LICENSE)
 
-Simple opinionated framework for building command-line apps.
-
-Describe your CLI's shape once (options, positionals, subcommands) and yalp handles parsing,
-validation, `--help`/`--version`, and helpful "did you mean" errors for you. No boilerplate, no
-runtime dependencies, fully typed end to end.
+Simple, opinionated framework for building command-line apps.
 
 ## Features
 
-- **Full type inference.** Declare an option's type and get it back typed in your action, no
-  generics needed.
+- **Full type inference.** Declare an option's type and get it back typed in your action, no generics needed.
 - **Zero runtime dependencies.** Small, auditable, nothing to pull in transitively.
-- **Argument syntax people already know.** Long/short flags, `-abc` clustering, `--no-name`
-  negation, and `--` passthrough, the same conventions git and npm use.
-- **Batteries included, but optional.** `run()` gives you help text, version output, and formatted
-  errors for free. Prefer to own your output? Call `parse()` directly instead.
+- **Argument syntax people already know.** Long/short flags, `-abc` clustering, `--no-name` negation, and `--` passthrough, the same conventions git and npm use.
+- **Batteries included.** Help text, version output, and helpful "did you mean" suggestions for typos, all included by default. Need custom formatting instead? Parse the arguments yourself and handle the result directly.
 - **Runs anywhere modern.** ESM only, Node.js 22+, Deno, and Bun.
 
 ## Install
@@ -101,8 +94,8 @@ $ node cli.js add a.ts b.ts
 Staged: a.ts, b.ts
 ```
 
-More, larger examples live in [`examples/`](./examples), including a multi-file CLI and calling
-`parse()` directly instead of `run()`.
+More extensive examples live in [`examples/`](./examples), including a multi-file CLI and manual
+`parse()` usage instead of `run()`.
 
 ## Contributing
 
