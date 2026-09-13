@@ -1,3 +1,4 @@
+/** The primitive types a parameter's value can hold. */
 export type ParamType = "string" | "number" | "boolean";
 
 type TypeMap = { string: string; number: number; boolean: boolean };

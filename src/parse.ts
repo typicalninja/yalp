@@ -1,6 +1,7 @@
 import { findOptionByShort, findSubCommand, type Command } from "./command.js";
 import type { Param } from "./parameter.js";
 
+/** Reasons parse() rejects a token. */
 export type IssueCode =
   | "ERR_UNKNOWN_OPTION"
   | "ERR_MISSING_VALUE"
@@ -10,6 +11,7 @@ export type IssueCode =
   | "ERR_INVALID_NUMBER"
   | "ERR_INVALID_CHOICE";
 
+/** One problem found while parsing argv. */
 export interface Issue {
   code: IssueCode;
   message: string;
@@ -25,6 +27,10 @@ interface Resolved {
   path: string[];
 }
 
+/**
+ * The result of {@link parse}: a successful run, help, or version match, or a failed parse with
+ * issues.
+ */
 export type ParseResult =
   | (Resolved & {
       ok: true;

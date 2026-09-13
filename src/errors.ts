@@ -10,6 +10,7 @@ export abstract class YalpError extends Error {
   }
 }
 
+/** Reasons defineCommand() rejects a command definition. */
 export type ConfigErrorCode =
   | "ERR_INVALID_NAME"
   | "ERR_DUPLICATE_SUBCOMMAND"
@@ -17,6 +18,7 @@ export type ConfigErrorCode =
   | "ERR_RESERVED_NAME"
   | "ERR_INVALID_POSITIONAL_ORDER";
 
+/** Constructor options for {@link ConfigError}. */
 export interface ConfigErrorOptions extends ErrorOptions {
   code: ConfigErrorCode;
 }

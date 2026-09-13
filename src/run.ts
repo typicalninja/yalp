@@ -3,6 +3,7 @@ import { help } from "./help.js";
 import { parse, type Issue } from "./parse.js";
 import { suggest } from "./suggest.js";
 
+/** Options for {@link run}. */
 export interface RunOptions {
   argv?: string[];
   /** Enables -V / --version on the root command. Omit to disable. */
