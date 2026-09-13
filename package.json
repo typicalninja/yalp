@@ -2,7 +2,16 @@
   "name": "yalp",
   "version": "1.0.0",
   "description": "Simple opinionated framework for building command-line apps",
-  "keywords": [],
+  "keywords": [
+    "args",
+    "argv",
+    "cli",
+    "cli-parser",
+    "command-line",
+    "parser",
+    "subcommands",
+    "typescript"
+  ],
   "license": "MIT",
   "author": {
     "name": "typicalninja",
@@ -12,7 +21,11 @@
     "type": "git",
     "url": "git+https://github.com/typicalninja/yalp.git"
   },
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": false,
   "types": "./dist/index.d.mts",
   "exports": "./dist/index.mjs",
   "scripts": {
@@ -37,11 +50,17 @@
     "vitest": "^3.2.4"
   },
   "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.1.2",
-      "onFail": "download"
-    }
+    "packageManager": [
+      {
+        "name": "pnpm",
+        "version": "^11.1.2",
+        "onFail": "warn"
+      },
+      {
+        "name": "npm",
+        "onFail": "warn"
+      }
+    ]
   },
   "engines": {
     "node": ">=22"
