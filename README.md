@@ -31,6 +31,20 @@ pnpm add yalp-js
 bun add yalp-js
 ```
 
+Or from [JSR](https://jsr.io/@typical/yalp):
+
+```sh
+# deno
+deno add jsr:@typical/yalp
+# pnpm 10.9+
+pnpm add jsr:@typical/yalp
+# yarn 4.9+
+yarn add jsr:@typical/yalp
+
+# npm, bun, and older versions of yarn or pnpm
+npx jsr add @typical/yalp # replace npx with any of yarn dlx, pnpm dlx, or bunx
+```
+
 ## Usage
 
 A single command:
