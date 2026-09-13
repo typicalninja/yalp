@@ -1,8 +1,8 @@
 # yalp examples
 
-- [`hello-world/`](./hello-world) — the basics
-- [`git-lite/`](./git-lite) — multi-file, recreates `git`
-- [`parse-manual/`](./parse-manual) — manual `parse()`, for advanced use
+- [`hello-world/`](./hello-world): the basics
+- [`git-lite/`](./git-lite): multi-file, recreates `git`
+- [`parse-manual/`](./parse-manual): manual `parse()`, for advanced use
 
 ## Setup
 

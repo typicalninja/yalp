@@ -9,12 +9,12 @@ A multi-file CLI that recreates a slice of `git`'s command surface. It isn't a o
 - Required, optional, and variadic positional arguments (`checkout <branch>`, `branch [name]`, `add <files...>`)
 - A required option (`commit -m/--message`)
 - A plain boolean (`--amend`) and a negatable boolean (`--verify`, which
-  defaults to `true` — pass `--no-verify` to flip it, a real git flag)
+  defaults to `true`. Pass `--no-verify` to flip it, a real git flag)
 - A repeatable option (`commit --trailer`, appended once per occurrence)
 - `choices` and `default` (`branch --sort=refname|committerdate`, real git
   for-each-ref keys)
 - `--` passthrough (`checkout <branch> -- <paths>`). In yalp, everything after
-  `--` is handed to the action unparsed, as `rest` — it is not a general
+  `--` is handed to the action unparsed, as `rest`. It is not a general
   end-of-options marker the way it is in real git. Only `checkout` reads
   `rest` here; `--` in front of any other subcommand's arguments (for
   example `add -- a.ts`) does not feed those arguments to `add`.

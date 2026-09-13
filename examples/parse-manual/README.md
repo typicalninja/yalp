@@ -4,7 +4,8 @@ Most CLIs should use `run()`, shown in the other two examples. This example is f
 
 ## What this shows
 
-- `parse(cmd, argv)` returning a discriminated `ParseOk | ParseFail`
+- `parse(cmd, argv)` returning a discriminated `ParseResult` (`ok` plus a
+  `kind` of `"run"`, `"help"`, or `"version"`)
 - Handling a failed parse yourself: reading `result.issues` and setting
   `process.exitCode`
 - A required positional argument
