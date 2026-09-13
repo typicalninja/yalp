@@ -6,23 +6,14 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
   publish:
     name: Publish to JSR
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      # No-ops safely if jsr.jsonc's version is already published to JSR, so
-      # it's harmless to run on every push to main. Requires a Trusted
-      # Publisher for this exact repo + workflow file configured on the
-      # @typicalninja/yalp package's settings on jsr.io.
-      - run: npx jsr publish --provenance
+      - uses: actions/checkout@v6
+      - name: Publish package
+        run: npx jsr publish
