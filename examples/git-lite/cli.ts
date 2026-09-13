@@ -6,7 +6,7 @@ import { commitCmd } from "./commands/commit.ts";
 import { initCmd } from "./commands/init.ts";
 
 // A Command is plain data (see command.ts's own doc comment), so composing
-// subcommands is just building an array of them — no factory, no registry.
+// subcommands is just building an array of them. No factory, no registry.
 const cmd = defineCommand({
   name: "git-lite",
   description: "A minimal slice of git's command surface, for demonstration.",
