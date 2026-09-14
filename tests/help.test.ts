@@ -70,6 +70,37 @@ describe("help: sections", () => {
     expect(output).toContain("(required)");
   });
 
+  it("lists examples under an Examples section, prefilling the command path", () => {
+    const cmd = defineCommand({
+      name: "app",
+      examples: ["build --watch", "deploy prod"],
+    });
+    const output = help(cmd, ["app"]);
+    expect(output).toContain("Examples:");
+    expect(output).toContain("app build --watch");
+    expect(output).toContain("app deploy prod");
+  });
+
+  it("includes a note alongside an example given as an [args, note] tuple", () => {
+    const cmd = defineCommand({
+      name: "app",
+      examples: [["build --watch", "rebuild on file changes"]],
+    });
+    const output = help(cmd, ["app"]);
+    expect(output).toContain("app build --watch");
+    expect(output).toContain("rebuild on file changes");
+  });
+
+  it("prefills the full nested path for a subcommand's examples", () => {
+    const cmd = defineCommand({ name: "sub", examples: ["--force"] });
+    expect(help(cmd, ["app", "sub"])).toContain("app sub --force");
+  });
+
+  it("omits the Examples section when no examples are given", () => {
+    const cmd = defineCommand({ name: "app" });
+    expect(help(cmd, ["app"])).not.toContain("Examples:");
+  });
+
   it("includes a positional's own description alongside its other notes", () => {
     const cmd = defineCommand({
       name: "app",
