@@ -41,10 +41,12 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.5",
     "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^3.2.4",
     "oxfmt": "^0.59.0",
     "oxlint": "^1.74.0",
+    "publint": "^0.3.24",
     "tsdown": "^0.22.8",
     "typescript": "^7.0.2",
     "vitest": "^3.2.4"
