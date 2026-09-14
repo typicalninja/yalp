@@ -10,20 +10,24 @@ export abstract class YalpError extends Error {
   }
 }
 
-/** Reasons defineCommand() rejects a command definition. */
+/** Reasons defineCommand() rejects a command definition, or loadFromDirectory() a module. */
 export type ConfigErrorCode =
   | "ERR_INVALID_NAME"
   | "ERR_DUPLICATE_SUBCOMMAND"
   | "ERR_DUPLICATE_OPTION"
   | "ERR_RESERVED_NAME"
-  | "ERR_INVALID_POSITIONAL_ORDER";
+  | "ERR_INVALID_POSITIONAL_ORDER"
+  | "ERR_INVALID_MODULE";
 
 /** Constructor options for {@link ConfigError}. */
 export interface ConfigErrorOptions extends ErrorOptions {
   code: ConfigErrorCode;
 }
 
-/** Thrown by defineCommand() when a command definition is invalid */
+/**
+ * Thrown by defineCommand() when a command definition is invalid, or loadFromDirectory() when a
+ * module isn't one
+ */
 export class ConfigError extends YalpError {
   readonly code: ConfigErrorCode;
   constructor(message: string, options: ConfigErrorOptions) {

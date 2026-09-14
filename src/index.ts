@@ -1,6 +1,7 @@
 export * from "./errors.js";
 export * from "./run.js";
 export { defineCommand } from "./command.js";
+export { loadFromDirectory } from "./load.js";
 export { parse } from "./parse.js";
 
 export type * from "./command.js";
