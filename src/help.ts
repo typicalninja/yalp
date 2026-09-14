@@ -29,6 +29,10 @@ function wrap(text: string, width: number): string[] {
     } else {
       line = next;
     }
+    while (line.length > width) {
+      lines.push(line.slice(0, width));
+      line = line.slice(width);
+    }
   }
   if (line) lines.push(line);
   return lines;

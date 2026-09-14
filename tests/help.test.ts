@@ -139,6 +139,7 @@ describe("help: description wrapping", () => {
       expect(lines.some((l) => l.trim().startsWith("pick config"))).toBe(true);
     } finally {
       if (columns) Object.defineProperty(process.stdout, "columns", columns);
+      else delete (process.stdout as { columns?: number }).columns;
     }
   });
 
@@ -153,6 +154,28 @@ describe("help: description wrapping", () => {
       expect(help(cmd, ["app"])).toContain("sets the deployment environment");
     } finally {
       if (columns) Object.defineProperty(process.stdout, "columns", columns);
+      else delete (process.stdout as { columns?: number }).columns;
+    }
+  });
+
+  it("splits a single word longer than the available width instead of overflowing", () => {
+    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+    Object.defineProperty(process.stdout, "columns", { value: 70, configurable: true });
+    try {
+      const cmd = defineCommand({
+        name: "app",
+        options: {
+          env: {
+            description:
+              "see https://example.com/a-very-long-url-that-cannot-fit-on-one-line-at-all-really",
+          },
+        },
+      });
+      const lines = help(cmd, ["app"]).split("\n");
+      for (const line of lines) expect(line.length).toBeLessThanOrEqual(70);
+    } finally {
+      if (columns) Object.defineProperty(process.stdout, "columns", columns);
+      else delete (process.stdout as { columns?: number }).columns;
     }
   });
 });
