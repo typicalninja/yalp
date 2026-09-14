@@ -118,3 +118,64 @@ describe("help: sections", () => {
     expect(help(sub, ["app", "sub"], "1.0.0")).not.toContain("-V, --version");
   });
 });
+
+describe("help: description wrapping", () => {
+  it("wraps a long description onto multiple lines under stdout.columns width", () => {
+    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+    Object.defineProperty(process.stdout, "columns", { value: 60, configurable: true });
+    try {
+      const cmd = defineCommand({
+        name: "app",
+        options: {
+          env: {
+            description:
+              "sets the deployment environment used to pick config, secrets, and endpoints",
+          },
+        },
+      });
+      const lines = help(cmd, ["app"]).split("\n");
+      for (const line of lines) expect(line.length).toBeLessThanOrEqual(60);
+      expect(lines.some((l) => l.includes("sets the deployment"))).toBe(true);
+      expect(lines.some((l) => l.trim().startsWith("pick config"))).toBe(true);
+    } finally {
+      if (columns) Object.defineProperty(process.stdout, "columns", columns);
+      else delete (process.stdout as { columns?: number }).columns;
+    }
+  });
+
+  it("leaves a description unwrapped when the terminal is too narrow to wrap usefully", () => {
+    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+    Object.defineProperty(process.stdout, "columns", { value: 10, configurable: true });
+    try {
+      const cmd = defineCommand({
+        name: "app",
+        options: { env: { description: "sets the deployment environment" } },
+      });
+      expect(help(cmd, ["app"])).toContain("sets the deployment environment");
+    } finally {
+      if (columns) Object.defineProperty(process.stdout, "columns", columns);
+      else delete (process.stdout as { columns?: number }).columns;
+    }
+  });
+
+  it("splits a single word longer than the available width instead of overflowing", () => {
+    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+    Object.defineProperty(process.stdout, "columns", { value: 70, configurable: true });
+    try {
+      const cmd = defineCommand({
+        name: "app",
+        options: {
+          env: {
+            description:
+              "see https://example.com/a-very-long-url-that-cannot-fit-on-one-line-at-all-really",
+          },
+        },
+      });
+      const lines = help(cmd, ["app"]).split("\n");
+      for (const line of lines) expect(line.length).toBeLessThanOrEqual(70);
+    } finally {
+      if (columns) Object.defineProperty(process.stdout, "columns", columns);
+      else delete (process.stdout as { columns?: number }).columns;
+    }
+  });
+});
