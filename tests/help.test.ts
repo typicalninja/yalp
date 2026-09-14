@@ -141,4 +141,18 @@ describe("help: description wrapping", () => {
       if (columns) Object.defineProperty(process.stdout, "columns", columns);
     }
   });
+
+  it("leaves a description unwrapped when the terminal is too narrow to wrap usefully", () => {
+    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+    Object.defineProperty(process.stdout, "columns", { value: 10, configurable: true });
+    try {
+      const cmd = defineCommand({
+        name: "app",
+        options: { env: { description: "sets the deployment environment" } },
+      });
+      expect(help(cmd, ["app"])).toContain("sets the deployment environment");
+    } finally {
+      if (columns) Object.defineProperty(process.stdout, "columns", columns);
+    }
+  });
 });
