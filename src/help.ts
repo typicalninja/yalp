@@ -56,10 +56,12 @@ function table(rows: [string, string][]): string {
     .join("\n");
 }
 
+/** Formats help output for a command at the given command path. */
 export function help(cmd: Command, path: string[], version?: string): string {
   const options = Object.values(cmd.options);
+  const cmdPath = path.join(" ");
   const usage = [
-    path.join(" "),
+    cmdPath,
     cmd.commands.length ? "[command]" : "",
     options.length ? "[options]" : "",
     ...cmd.positionals.map(slot),
@@ -85,6 +87,14 @@ export function help(cmd: Command, path: string[], version?: string): string {
   rows.push(["-h, --help", "Show this help"]);
   if (version && path.length === 1) rows.push(["-V, --version", "Show version"]);
   out.push("", "Options:", table(rows));
+
+  if (cmd.examples?.length) {
+    const exampleRows: [string, string][] = cmd.examples.map((e) => {
+      const [args, desc] = Array.isArray(e) ? e : [e, ""];
+      return [`${cmdPath} ${args}`.trim(), desc];
+    });
+    out.push("", "Examples:", table(exampleRows));
+  }
 
   return out.join("\n");
 }

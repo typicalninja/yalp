@@ -8,6 +8,13 @@ const RESERVED_SHORT = new Set(["h", "V"]);
 
 type Specs = Record<string, ParamSpec>;
 
+/**
+ * An example invocation shown under "Examples:" in help output. A plain string is the arguments to
+ * append after the command's own path (e.g. `"--watch"`); a `[args, note]` tuple adds a
+ * description.
+ */
+export type Example = string | readonly [args: string, note: string];
+
 /** Arguments passed to a command's action function. */
 export interface ActionArgs<O extends Specs, P extends Specs> {
   options: { [K in keyof O]: ParamValue<O[K]> };
@@ -27,6 +34,7 @@ export type CommandAction = (args: {
 export interface Command {
   name: string;
   description?: string;
+  examples?: Example[];
   alias: string[];
   options: Record<string, Param>;
   positionals: Param[];
@@ -45,13 +53,15 @@ function check(ok: unknown, code: ConfigErrorCode, message: string): asserts ok 
 export function defineCommand<const O extends Specs = {}, const P extends Specs = {}>(config: {
   name: string;
   description?: string;
+  /** Example invocations shown under "Examples:" in help output. */
+  examples?: Example[];
   alias?: string[];
   options?: O;
   positionals?: P;
   commands?: Command[];
   action?: (args: ActionArgs<O, P>) => unknown;
 }): Command {
-  const { name, description, alias = [], commands = [] } = config;
+  const { name, description, examples, alias = [], commands = [] } = config;
 
   check(NAME.test(name), "ERR_INVALID_NAME", `command "${name}" must be kebab-case`);
   for (const a of alias) check(NAME.test(a), "ERR_INVALID_NAME", `alias "${a}" must be kebab-case`);
@@ -105,6 +115,7 @@ export function defineCommand<const O extends Specs = {}, const P extends Specs 
   return {
     name,
     description,
+    examples,
     alias,
     options,
     positionals,

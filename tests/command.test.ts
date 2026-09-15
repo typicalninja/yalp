@@ -194,10 +194,16 @@ describe("defineCommand: defaults & shape", () => {
     expect(cmd.commands).toEqual([]);
   });
 
-  it("keeps the provided description and action", () => {
+  it("keeps the provided description, examples, and action", () => {
     const action = () => "ran";
-    const cmd = defineCommand({ name: "cli", description: "does things", action });
+    const cmd = defineCommand({
+      name: "cli",
+      description: "does things",
+      examples: ["--watch"],
+      action,
+    });
     expect(cmd.description).toBe("does things");
+    expect(cmd.examples).toEqual(["--watch"]);
     expect(cmd.action).toBe(action);
   });
 

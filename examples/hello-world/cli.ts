@@ -3,6 +3,7 @@ import { defineCommand, run } from "../../dist/index.mjs";
 const cmd = defineCommand({
   name: "hello",
   description: "Greet someone.",
+  examples: ["Ada --shout", ["Grace --times 3", "greet Grace three times"]],
   positionals: {
     name: { description: "Who to greet", default: "World" },
   },

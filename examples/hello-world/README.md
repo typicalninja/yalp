@@ -8,6 +8,7 @@ The smallest useful yalp CLI: one command, no subcommands.
 - An optional positional argument with a `default` value
 - A boolean option with a `short` flag
 - A number option with a `default` value
+- `examples`, shown under `Examples:` in `--help`
 
 ## Run it
 
