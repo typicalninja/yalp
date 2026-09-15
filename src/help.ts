@@ -56,6 +56,7 @@ function table(rows: [string, string][]): string {
     .join("\n");
 }
 
+/** Formats help output for a command at the given command path. */
 export function help(cmd: Command, path: string[], version?: string): string {
   const options = Object.values(cmd.options);
   const cmdPath = path.join(" ");
