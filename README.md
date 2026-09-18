@@ -12,7 +12,7 @@ Simple, opinionated framework for building command-line apps.
 
 - **Full type inference.** Declare an option's type and get it back typed in your action, no generics needed.
 - **Zero runtime dependencies.** Small, auditable, nothing to pull in transitively.
-- **Argument syntax people already know.** Long/short flags, `-abc` clustering, `--no-name` negation, and `--` passthrough, the same conventions git and npm use.
+- **Argument syntax people already know.** Long/short flags, `-abc` clustering, `--no-name` negation, and `--` passthrough.
 - **Batteries included.** Help text, version output, and helpful "did you mean" suggestions for typos, all included by default. Need custom formatting instead? Parse the arguments yourself and handle the result directly.
 - **Runs anywhere modern.** ESM only, Node.js 22+, Deno, and Bun.
 
