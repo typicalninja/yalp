@@ -161,9 +161,11 @@ describe("fish completions", () => {
     expect(lines).toContain("complete -c my-app -e");
   });
 
-  it("scopes root options and subcommands to before a subcommand is typed", () => {
+  it("scopes root options to before a subcommand and root subcommands to fish's own helper", () => {
     expect(lines).toContain(`complete -c my-app ${rootWhen} -l env -r`);
-    expect(lines).toContain(`complete -c my-app ${rootWhen} -f -a 'build' -d 'Build it'`);
+    expect(lines).toContain(
+      "complete -c my-app -n __fish_use_subcommand -f -a 'build' -d 'Build it'",
+    );
   });
 
   it("marks value options as taking an argument but not boolean flags", () => {
@@ -209,6 +211,39 @@ describe("fish completions", () => {
 
   it.skipIf(!hasShell("fish"))("parses in a real fish with hostile values", () => {
     expect(parses("fish", fish.generate(hostileRoot))).toBe(true);
+  });
+
+  describe.skipIf(!hasShell("fish"))("in a real fish", () => {
+    /** Candidate names fish offers for `line`, after sourcing the generated script. */
+    const complete = (line: string) => {
+      const { stdout } = spawnSync("fish", ["--no-config", "-c", `source; complete -C '${line}'`], {
+        input: script,
+        encoding: "utf8",
+      });
+      return stdout
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => l.split("\t")[0]);
+    };
+
+    it("offers subcommands only before any non-dash word is typed", () => {
+      expect(complete("my-app ")).toEqual(expect.arrayContaining(["build", "dev"]));
+      expect(complete("my-app --env prod ")).not.toContain("build");
+      expect(complete("my-app --env prod ")).not.toContain("dev");
+    });
+
+    it("keeps offering root options after an option and its value", () => {
+      expect(complete("my-app --env prod --")).toEqual(
+        expect.arrayContaining(["--env", "--verbose"]),
+      );
+    });
+
+    it("follows aliases into nested subcommands and scopes options to them", () => {
+      expect(complete("my-app d ")).toEqual(expect.arrayContaining(["test"]));
+      const nested = complete("my-app dev test --");
+      expect(nested).toContain("--grep");
+      expect(nested).not.toContain("--out");
+    });
   });
 });
 
