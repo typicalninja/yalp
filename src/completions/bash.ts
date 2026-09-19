@@ -22,9 +22,11 @@ const generator: ShellScriptGenerator = {
         if (o.type === "boolean") continue;
 
         const pattern = names.map((n) => `"${key}:${n}"`).join("|");
+        // Choices are quoted one by one and matched with a plain prefix test: `compgen -W` would
+        // expand `$(...)`, `~` and `{a,b}` inside them.
         values.push(
           o.choices?.length
-            ? `${pattern}) COMPREPLY=($(compgen -W ${posixQuote(o.choices.join(" "))} -- "$cur")); return;;`
+            ? `${pattern}) for w in ${o.choices.map((c) => posixQuote(String(c))).join(" ")}; do [[ $w == "$cur"* ]] && COMPREPLY+=("$w"); done; return;;`
             : `${pattern}) return;;`,
         );
       }

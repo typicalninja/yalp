@@ -1,8 +1,11 @@
 import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { defineCommand } from "../src/command.js";
+import { type Command, defineCommand } from "../src/command.js";
 import bash from "../src/completions/bash.js";
 import fish from "../src/completions/fish.js";
 import zsh from "../src/completions/zsh.js";
@@ -94,7 +97,7 @@ describe("bash completions", () => {
     expect(script).toContain('":--env") return;;');
     expect(script).toContain('"build:--out"|"build:-o") return;;');
     expect(script).toContain(
-      `"build:--target") COMPREPLY=($(compgen -W 'es2022 node' -- "$cur")); return;;`,
+      `"build:--target") for w in 'es2022' 'node'; do [[ $w == "$cur"* ]] && COMPREPLY+=("$w"); done; return;;`,
     );
   });
 
@@ -107,7 +110,7 @@ describe("bash completions", () => {
     const quoted = bash.generate(
       defineCommand({ name: "q", options: { o: { choices: ["a'b"] } }, action: noop }),
     );
-    expect(quoted).toContain(`compgen -W 'a'\\''b'`);
+    expect(quoted).toContain(`for w in 'a'\\''b';`);
   });
 
   it("activates with eval, which also works on the bash 3.2 macOS ships", () => {
@@ -148,6 +151,42 @@ describe("bash completions", () => {
     it("does not run shell code embedded in descriptions or command names", () => {
       const { status } = spawnSync("bash", ["-c", `${bash.generate(hostileRoot)}\ntrue`]);
       expect(status).toBe(0);
+    });
+
+    /** Completes `words` for `cmd` in a real bash whose working directory is `cwd`. */
+    const completeIn = (cmd: Command, cwd: string, ...words: string[]) => {
+      const fn = `_${cmd.name.replaceAll("-", "_")}`;
+      const harness = `${bash.generate(cmd)}\nCOMP_WORDS=("$@"); COMP_CWORD=$(($# - 1)); ${fn}; printf '%s\\n' "\${COMPREPLY[@]}"`;
+      const { stdout } = spawnSync("bash", ["-c", harness, "bash", ...words], {
+        cwd,
+        encoding: "utf8",
+      });
+      return stdout.split("\n").filter(Boolean);
+    };
+
+    const inTempDir = (test: (dir: string) => void) => {
+      const dir = mkdtempSync(join(tmpdir(), "yalp-"));
+      try {
+        test(dir);
+      } finally {
+        rmSync(dir, { recursive: true });
+      }
+    };
+
+    it("matches choices literally instead of expanding them", () => {
+      inTempDir((dir) => {
+        const marker = join(dir, "pwned");
+        const choices = [`$(touch ${marker})`, "x y", "a{b,c}", "~"];
+        const risky = defineCommand({
+          name: "risky",
+          options: { mode: { choices } },
+          action: noop,
+        });
+
+        expect(completeIn(risky, dir, "risky", "--mode", "")).toEqual(choices);
+        expect(completeIn(risky, dir, "risky", "--mode", "x")).toEqual(["x y"]);
+        expect(existsSync(marker)).toBe(false);
+      });
     });
   });
 });
