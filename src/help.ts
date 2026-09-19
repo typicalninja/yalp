@@ -74,8 +74,14 @@ export function help(cmd: Command, path: string[], version?: string): string {
 
   if (cmd.commands.length) {
     out.push("", "Commands:");
+    // Only the first line (the summary) of a multi-line description fits the table.
     out.push(
-      table(cmd.commands.map((c) => [[c.name, ...c.alias].join(", "), c.description ?? ""])),
+      table(
+        cmd.commands.map((c) => [
+          [c.name, ...c.alias].join(", "),
+          c.description?.split("\n", 1)[0] ?? "",
+        ]),
+      ),
     );
   }
   if (cmd.positionals.length) {
