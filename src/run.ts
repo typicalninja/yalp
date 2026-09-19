@@ -1,4 +1,5 @@
 import type { Command } from "./command.js";
+import { rootWithCompletionsCommand } from "./completions/generate.js";
 import { help } from "./help.js";
 import { parse, type Issue } from "./parse.js";
 import { suggest } from "./suggest.js";
@@ -8,12 +9,14 @@ export interface RunOptions {
   argv?: string[];
   /** Enables -V / --version on the root command. Omit to disable. */
   version?: string;
+  completions?: boolean;
 }
 
 /** Parses argv, prints help or errors, runs the matched action. Sets process.exitCode. */
 export async function run(root: Command, options: RunOptions = {}): Promise<void> {
-  const { argv = process.argv.slice(2), version } = options;
-  const result = parse(root, argv, { version: Boolean(version) });
+  const { argv = process.argv.slice(2), version, completions = true } = options;
+  const effectiveRoot = completions ? rootWithCompletionsCommand(root) : root;
+  const result = parse(effectiveRoot, argv, { version: Boolean(version) });
 
   if (!result.ok) {
     console.error(format(result.command, result.path, result.issues));

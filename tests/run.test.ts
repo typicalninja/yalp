@@ -79,7 +79,8 @@ describe("run: no action", () => {
   it("prints help and exits 0 for a leaf command with no action", async () => {
     const cmd = defineCommand({ name: "app" });
 
-    await run(cmd, { argv: [] });
+    // The built-in completions command would make this a group command, so opt out.
+    await run(cmd, { argv: [], completions: false });
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Usage: app"));
     expect(process.exitCode).toBe(0);
@@ -360,5 +361,102 @@ describe("run: regressions", () => {
 
     expect(action).not.toHaveBeenCalled();
     expect(process.exitCode).toBe(2);
+  });
+});
+
+describe("run: completions", () => {
+  const app = () => defineCommand({ name: "my-app", action: () => undefined });
+
+  it.each(["bash", "fish", "zsh"])("prints the %s completion script", async (shell) => {
+    await run(app(), { argv: ["completions", shell] });
+
+    expect(logSpy).toHaveBeenCalledTimes(1);
+    expect(String(logSpy.mock.calls[0]?.[0])).toContain("my-app");
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it("lists the completions command in the root help", async () => {
+    await run(app(), { argv: ["--help"] });
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("completions"));
+  });
+
+  it("shows the summary but no activation command in the root help", async () => {
+    await run(app(), { argv: ["--help"] });
+
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    expect(printed).toContain("Generate a shell completion script");
+    expect(printed).not.toContain("eval");
+  });
+
+  it("shows how to enable each shell's completions in the completions help", async () => {
+    await run(app(), { argv: ["completions", "--help"] });
+
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    expect(printed).toContain('eval "$(my-app completions bash)"');
+    expect(printed).toContain("my-app completions fish | source");
+    expect(printed).toContain("source <(my-app completions zsh)");
+    expect(printed).not.toContain("Load it with");
+  });
+
+  it("describes a shell subcommand briefly in its own help", async () => {
+    await run(app(), { argv: ["completions", "bash", "--help"] });
+
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    expect(printed).toContain("Generate the bash completion script");
+    expect(printed).not.toContain("eval");
+  });
+
+  it("suggests the nearest shell for a mistyped one", async () => {
+    await run(app(), { argv: ["completions", "fsh"] });
+
+    expect(process.exitCode).toBe(2);
+    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
+    expect(printed).toContain("did you mean fish?");
+  });
+
+  it("does not mutate the command it was given", async () => {
+    const cmd = app();
+
+    await run(cmd, { argv: ["completions", "bash"] });
+
+    expect(cmd.commands).toHaveLength(0);
+  });
+
+  it("rejects a root that already defines a completions command", async () => {
+    const cmd = defineCommand({
+      name: "app",
+      commands: [defineCommand({ name: "completions", action: () => undefined })],
+    });
+
+    await expect(run(cmd, { argv: [] })).rejects.toMatchObject({ code: "ERR_RESERVED_NAME" });
+  });
+
+  it("rejects a root whose alias is completions", async () => {
+    const cmd = defineCommand({
+      name: "app",
+      commands: [defineCommand({ name: "gen", alias: ["completions"], action: () => undefined })],
+    });
+
+    await expect(run(cmd, { argv: [] })).rejects.toMatchObject({ code: "ERR_RESERVED_NAME" });
+  });
+
+  it("lets an app define its own completions command when built-in completions are off", async () => {
+    const action = vi.fn();
+    const cmd = defineCommand({
+      name: "app",
+      commands: [defineCommand({ name: "completions", action })],
+    });
+
+    await run(cmd, { argv: ["completions"], completions: false });
+
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("registers no completions command when built-in completions are off", async () => {
+    await run(app(), { argv: ["completions", "bash"], completions: false });
+
+    expect(process.exitCode).toBe(2);
+    expect(logSpy).not.toHaveBeenCalled();
   });
 });

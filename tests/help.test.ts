@@ -55,6 +55,18 @@ describe("help: sections", () => {
     expect(output).toContain("runs it");
   });
 
+  it("shows only the first line of a multi-line subcommand description in the parent's table", () => {
+    const sub = defineCommand({ name: "sub", description: "summary line\n\ndetail line" });
+    const output = help(defineCommand({ name: "app", commands: [sub] }), ["app"]);
+    expect(output).toContain("summary line");
+    expect(output).not.toContain("detail line");
+  });
+
+  it("prints a multi-line description in full in the command's own help", () => {
+    const sub = defineCommand({ name: "sub", description: "summary line\n\ndetail line" });
+    expect(help(sub, ["app", "sub"])).toContain("summary line\n\ndetail line");
+  });
+
   it("lists positionals with choices and default/required notes", () => {
     const cmd = defineCommand({
       name: "app",
