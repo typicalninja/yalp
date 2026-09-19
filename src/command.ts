@@ -17,7 +17,9 @@ export type Example = string | readonly [args: string, note: string];
 
 /** Arguments passed to a command's action function. */
 export interface ActionArgs<O extends Specs, P extends Specs> {
+  /** Parsed options, keyed by option name. */
   options: { [K in keyof O]: ParamValue<O[K]> };
+  /** Parsed positional arguments, keyed by positional name. */
   positionals: { [K in keyof P]: ParamValue<P[K]> };
   /** Arguments after `--`, in order. */
   rest: string[];
@@ -32,13 +34,21 @@ export type CommandAction = (args: {
 
 /** A built command. Plain data: the parser reads it, nothing mutates it. */
 export interface Command {
+  /** Command name. */
   name: string;
+  /** Help text. Only the first line is listed in a parent's help. */
   description?: string;
+  /** Example invocations listed in help. */
   examples?: Example[];
+  /** Alternative names. */
   alias: string[];
+  /** Options, keyed by name. */
   options: Record<string, Param>;
+  /** Positional arguments, in fill order. */
   positionals: Param[];
+  /** Subcommands. */
   commands: Command[];
+  /** Handler, with argument types erased. */
   action?: CommandAction;
 }
 
@@ -51,14 +61,21 @@ function check(ok: unknown, code: ConfigErrorCode, message: string): asserts ok 
  * when an end user happens to hit that code path.
  */
 export function defineCommand<const O extends Specs = {}, const P extends Specs = {}>(config: {
+  /** Command name. Kebab-case. */
   name: string;
+  /** Help text. Only the first line is listed in a parent's help. */
   description?: string;
-  /** Example invocations shown under "Examples:" in help output. */
+  /** Example invocations listed in help. */
   examples?: Example[];
+  /** Alternative names. Kebab-case, unique among sibling commands. */
   alias?: string[];
+  /** Options, keyed by kebab-case name. */
   options?: O;
+  /** Positional arguments, keyed by kebab-case name and filled in declaration order. */
   positionals?: P;
+  /** Subcommands. */
   commands?: Command[];
+  /** Handler. Receives the parsed `options`, `positionals`, and `rest`. May be async. */
   action?: (args: ActionArgs<O, P>) => unknown;
 }): Command {
   const { name, description, examples, alias = [], commands = [] } = config;

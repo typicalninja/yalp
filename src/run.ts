@@ -6,9 +6,11 @@ import { suggest } from "./suggest.js";
 
 /** Options for {@link run}. */
 export interface RunOptions {
+  /** Arguments to parse. Defaults to `process.argv.slice(2)`. */
   argv?: string[];
   /** Enables -V / --version on the root command. Omit to disable. */
   version?: string;
+  /** Adds the built-in `completions` command. Defaults to `true`. */
   completions?: boolean;
 }
 

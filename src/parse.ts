@@ -52,7 +52,10 @@ const VERSION = new Set(["-V", "--version"]);
 export function parse(
   root: Command,
   argv: string[],
-  config: { version?: boolean } = {},
+  config: {
+    /** Enables -V / --version on the root command. Defaults to `false`. */
+    version?: boolean;
+  } = {},
 ): ParseResult {
   const sep = argv.indexOf("--");
   const head = sep === -1 ? argv : argv.slice(0, sep);

@@ -5,12 +5,19 @@ type TypeMap = { string: string; number: number; boolean: boolean };
 
 /** What a user writes. Every field optional; `type` defaults to "string". */
 export interface ParamSpec {
+  /** Value type. Defaults to `"string"`. */
   type?: ParamType;
+  /** One-letter option alias, used as `-x`. `h` and `V` are reserved. */
   short?: string;
+  /** Help text. */
   description?: string;
+  /** Omission is an error unless `default` is set. */
   required?: boolean;
+  /** Collects repeated occurrences into an array. On a positional, valid only in the last position. */
   multiple?: boolean;
+  /** Value used when the parameter is omitted. */
   default?: string | number | boolean | readonly (string | number | boolean)[];
+  /** Permitted values. Narrows the value's type. */
   choices?: readonly (string | number)[];
 }
 
