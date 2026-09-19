@@ -15,13 +15,21 @@ export function rootWithCompletionsCommand(root: Command): Command {
     );
   }
 
+  const nameWidth = Math.max(...generators.map((generator) => generator.name.length));
+  const activation = generators
+    .map(
+      (generator) =>
+        `  ${generator.name.padEnd(nameWidth)}  ${generator.completionActivateMessage(root.name)}`,
+    )
+    .join("\n");
+
   const completions = defineCommand({
     name: "completions",
-    description: "Generate a shell completion script",
+    description: `Generate a shell completion script\n\nEnable completions by running one of these, or by adding it to your shell's startup file:\n\n${activation}`,
     commands: generators.map((generator) =>
       defineCommand({
         name: generator.name,
-        description: `Generate ${generator.name} completion script. Load it with: "${generator.completionActivateMessage(root.name)}"`,
+        description: `Generate the ${generator.name} completion script`,
         action: () => console.log(generator.generate(withCompletions)),
       }),
     ),

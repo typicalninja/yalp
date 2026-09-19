@@ -381,6 +381,32 @@ describe("run: completions", () => {
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("completions"));
   });
 
+  it("shows the summary but no activation command in the root help", async () => {
+    await run(app(), { argv: ["--help"] });
+
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    expect(printed).toContain("Generate a shell completion script");
+    expect(printed).not.toContain("eval");
+  });
+
+  it("shows how to enable each shell's completions in the completions help", async () => {
+    await run(app(), { argv: ["completions", "--help"] });
+
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    expect(printed).toContain('eval "$(my-app completions bash)"');
+    expect(printed).toContain("my-app completions fish | source");
+    expect(printed).toContain("source <(my-app completions zsh)");
+    expect(printed).not.toContain("Load it with");
+  });
+
+  it("describes a shell subcommand briefly in its own help", async () => {
+    await run(app(), { argv: ["completions", "bash", "--help"] });
+
+    const printed = String(logSpy.mock.calls[0]?.[0]);
+    expect(printed).toContain("Generate the bash completion script");
+    expect(printed).not.toContain("eval");
+  });
+
   it("suggests the nearest shell for a mistyped one", async () => {
     await run(app(), { argv: ["completions", "fsh"] });
 
