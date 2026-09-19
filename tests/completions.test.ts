@@ -304,6 +304,10 @@ describe("zsh completions", () => {
     expect(script).toContain("dev|d) _my-app_dev ;;");
   });
 
+  it("offers subcommands only directly after the command, as the parser does", () => {
+    expect(script).toContain("(( CURRENT == 2 )) && _describe -t commands command cmds ;;");
+  });
+
   it("activates by sourcing", () => {
     expect(zsh.completionActivateMessage("my-app")).toBe("source <(my-app completions zsh)");
   });

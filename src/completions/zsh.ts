@@ -57,7 +57,8 @@ const generator: ShellScriptGenerator = {
           `  case $state in`,
           `    cmds)`,
           `      local -a cmds=(${cmds.join(" ")})`,
-          `      _describe -t commands command cmds ;;`,
+          // Mirrors the parser: only the word right after the command can be a subcommand.
+          `      (( CURRENT == 2 )) && _describe -t commands command cmds ;;`,
           `    args)`,
           `      case $line[1] in`,
           ...arms,
