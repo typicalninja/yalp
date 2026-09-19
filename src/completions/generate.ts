@@ -21,7 +21,7 @@ export function rootWithCompletionsCommand(root: Command): Command {
       defineCommand({
         name: generator.name,
         description: `Generate ${generator.name} completion script. Load it with: "${generator.completionActivateMessage(bin)}"`,
-        action: () => console.log(generator.generate()),
+        action: () => console.log(generator.generate(root)),
       }),
     ),
   });
