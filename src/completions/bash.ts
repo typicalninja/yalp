@@ -48,10 +48,12 @@ const generator: ShellScriptGenerator = {
     return [
       `# bash completion for ${bin}`,
       `${fn}() {`,
-      `  local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]} cmd= w opts= subs=`,
+      `  local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]} cmd= w opts= subs= stop=`,
+      // Like the parser, only leading words can name subcommands: the first other word ends the walk.
       `  for w in "\${COMP_WORDS[@]:1:COMP_CWORD-1}"; do`,
       `    case "$cmd:$w" in`,
       ...arms(walk, "      "),
+      `      *) stop=1; break;;`,
       `    esac`,
       `  done`,
       // An option that takes a value completes only its choices, or files via `-o default` below.
@@ -63,7 +65,7 @@ const generator: ShellScriptGenerator = {
       `  esac`,
       `  if [[ $cur == -* ]]; then`,
       `    COMPREPLY=($(compgen -W "$opts" -- "$cur"))`,
-      `  else`,
+      `  elif [[ -z $stop ]]; then`,
       `    COMPREPLY=($(compgen -W "$subs" -- "$cur"))`,
       `  fi`,
       `}`,

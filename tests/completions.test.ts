@@ -78,6 +78,10 @@ describe("bash completions", () => {
     expect(script).toContain('"dev:test") cmd=dev/test;;');
   });
 
+  it("ends the walk at the first word that is not a subcommand", () => {
+    expect(script).toContain("*) stop=1; break;;");
+  });
+
   it("lists each command's options (with short forms) and subcommands", () => {
     expect(script).toContain(`"") opts='--env --verbose -v' subs='build dev';;`);
     expect(script).toContain(
@@ -129,6 +133,12 @@ describe("bash completions", () => {
         "--tag",
       ]);
       expect(complete("my-app", "build", "--target", "n")).toEqual(["node"]);
+    });
+
+    it("stops offering subcommands once a non-subcommand word precedes the cursor", () => {
+      expect(complete("my-app", "--env", "prod", "")).toEqual([]);
+      expect(complete("my-app", "--verbose", "")).toEqual([]);
+      expect(complete("my-app", "--env", "prod", "--")).toEqual(["--env", "--verbose"]);
     });
 
     it("offers nothing after a value option without choices so bash falls back to files", () => {
