@@ -25,7 +25,7 @@ export function rootWithCompletionsCommand(root: Command): Command {
 
   const completions = defineCommand({
     name: "completions",
-    description: `Generate a shell completion script\n\nEnable completions by running one of these, or by adding it to your shell's startup file:\n\n${activation}`,
+    description: `Generate a shell completion script\n\nTo enable completions, run one of these or add it to your shell's startup file:\n\n${activation}`,
     commands: generators.map((generator) =>
       defineCommand({
         name: generator.name,
