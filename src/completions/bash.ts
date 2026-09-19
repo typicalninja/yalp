@@ -1,7 +1,5 @@
 import type { Command } from "../command.js";
-import type { ShellScriptGenerator } from "./shared.js";
-
-const quote = (s: string): string => `'${s.replaceAll("'", "'\\''")}'`;
+import { posixQuote, type ShellScriptGenerator } from "./shared.js";
 
 const generator: ShellScriptGenerator = {
   name: "bash",
@@ -26,13 +24,15 @@ const generator: ShellScriptGenerator = {
         const pattern = names.map((n) => `"${key}:${n}"`).join("|");
         values.push(
           o.choices?.length
-            ? `${pattern}) COMPREPLY=($(compgen -W ${quote(o.choices.join(" "))} -- "$cur")); return;;`
+            ? `${pattern}) COMPREPLY=($(compgen -W ${posixQuote(o.choices.join(" "))} -- "$cur")); return;;`
             : `${pattern}) return;;`,
         );
       }
 
       const subs = cmd.commands.map((c) => c.name);
-      nodes.push(`"${key}") opts=${quote(flags.join(" "))} subs=${quote(subs.join(" "))};;`);
+      nodes.push(
+        `"${key}") opts=${posixQuote(flags.join(" "))} subs=${posixQuote(subs.join(" "))};;`,
+      );
 
       for (const sub of cmd.commands) {
         const child = key ? `${key}/${sub.name}` : sub.name;
