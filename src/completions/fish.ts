@@ -34,9 +34,11 @@ const generator: ShellScriptGenerator = {
 
       // The parser only descends through leading words, which fish's official helper mirrors at the root.
       const subWhen = levels.length ? when : " -n __fish_use_subcommand";
+      // A group that also takes positionals keeps file completion next to its subcommands.
+      const noFiles = cmd.positionals.length ? "" : " -f";
       for (const sub of cmd.commands) {
         lines.push(
-          `complete -c ${bin}${subWhen} -f -a ${fishQuote(sub.name)}${describe(sub.description)}`,
+          `complete -c ${bin}${subWhen}${noFiles} -a ${fishQuote(sub.name)}${describe(sub.description)}`,
         );
         visitNode(sub, [...levels, seen([sub.name, ...sub.alias])]);
       }

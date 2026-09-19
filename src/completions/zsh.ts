@@ -46,6 +46,9 @@ const generator: ShellScriptGenerator = {
         const cmds = cmd.commands.map((c) =>
           posixQuote(c.description ? `${c.name}:${c.description}` : c.name),
         );
+        // A group that also takes positionals offers files next to its subcommands.
+        const [first] = cmd.positionals;
+        const files = first !== undefined && action(first) === "_files";
         const arms = cmd.commands.map((c) => {
           visitNode(c, [...path, c.name]);
           return `        ${[c.name, ...c.alias].join("|")}) ${fnName([...path, c.name])} ;;`;
@@ -58,10 +61,13 @@ const generator: ShellScriptGenerator = {
           `    cmds)`,
           `      local -a cmds=(${cmds.join(" ")})`,
           // Mirrors the parser: only the word right after the command can be a subcommand.
-          `      (( CURRENT == 2 )) && _describe -t commands command cmds ;;`,
+          files
+            ? `      (( CURRENT == 2 )) && { _describe -t commands command cmds; _files; } ;;`
+            : `      (( CURRENT == 2 )) && _describe -t commands command cmds ;;`,
           `    args)`,
           `      case $line[1] in`,
           ...arms,
+          ...(files ? [`        *) _files ;;`] : []),
           `      esac ;;`,
           `  esac`,
         );

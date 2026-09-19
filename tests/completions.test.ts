@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -38,6 +38,14 @@ const root = defineCommand({
   name: "my-app",
   options: { env: {}, verbose: { type: "boolean", short: "v", description: "Chatty" } },
   commands: [build, dev],
+  action: noop,
+});
+
+/** A group command that also takes a positional, like any app run with built-in completions. */
+const mixed = defineCommand({
+  name: "greet",
+  positionals: { file: {} },
+  commands: [defineCommand({ name: "sub", description: "Summary line", action: noop })],
   action: noop,
 });
 
@@ -99,6 +107,11 @@ describe("bash completions", () => {
     expect(script).toContain(
       `"build:--target") for w in 'es2022' 'node'; do [[ $w == "$cur"* ]] && COMPREPLY+=("$w"); done; return;;`,
     );
+  });
+
+  it("offers files next to subcommands only for a group that also takes positionals", () => {
+    expect(bash.generate(mixed)).toContain(`"") opts='' subs='sub' files=1;;`);
+    expect(script).not.toContain("files=1");
   });
 
   it("does not treat boolean flags as taking a value", () => {
@@ -173,6 +186,15 @@ describe("bash completions", () => {
       }
     };
 
+    it("offers files next to subcommands for a group that also takes positionals", () => {
+      inTempDir((dir) => {
+        writeFileSync(join(dir, "apple.txt"), "");
+        expect(completeIn(mixed, dir, "greet", "")).toEqual(["sub", "apple.txt"]);
+        expect(completeIn(mixed, dir, "greet", "a")).toEqual(["apple.txt"]);
+        expect(completeIn(root, dir, "my-app", "")).toEqual(["build", "dev"]);
+      });
+    });
+
     it("matches choices literally instead of expanding them", () => {
       inTempDir((dir) => {
         const marker = join(dir, "pwned");
@@ -228,6 +250,12 @@ describe("fish completions", () => {
     );
     expect(lines).toContain(
       `complete -c my-app -n '${seenDev}; and __fish_seen_subcommand_from test' -l grep -r`,
+    );
+  });
+
+  it("keeps file completion for a group that also takes positionals", () => {
+    expect(fish.generate(mixed)).toContain(
+      "complete -c greet -n __fish_use_subcommand -a 'sub' -d 'Summary line'",
     );
   });
 
@@ -345,6 +373,15 @@ describe("zsh completions", () => {
 
   it("offers subcommands only directly after the command, as the parser does", () => {
     expect(script).toContain("(( CURRENT == 2 )) && _describe -t commands command cmds ;;");
+  });
+
+  it("offers files next to subcommands for a group that also takes positionals", () => {
+    const out = zsh.generate(mixed);
+    expect(out).toContain(
+      "(( CURRENT == 2 )) && { _describe -t commands command cmds; _files; } ;;",
+    );
+    expect(out).toContain("*) _files ;;");
+    expect(script).not.toContain("*) _files ;;");
   });
 
   it("activates by sourcing", () => {

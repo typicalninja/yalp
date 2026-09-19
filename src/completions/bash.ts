@@ -32,8 +32,10 @@ const generator: ShellScriptGenerator = {
       }
 
       const subs = cmd.commands.map((c) => c.name);
+      // A group that also takes positionals offers files next to its subcommands.
+      const files = subs.length && cmd.positionals.length ? " files=1" : "";
       nodes.push(
-        `"${key}") opts=${posixQuote(flags.join(" "))} subs=${posixQuote(subs.join(" "))};;`,
+        `"${key}") opts=${posixQuote(flags.join(" "))} subs=${posixQuote(subs.join(" "))}${files};;`,
       );
 
       for (const sub of cmd.commands) {
@@ -50,7 +52,7 @@ const generator: ShellScriptGenerator = {
     return [
       `# bash completion for ${bin}`,
       `${fn}() {`,
-      `  local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]} cmd= w opts= subs= stop=`,
+      `  local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]} cmd= w opts= subs= files= stop=`,
       // Like the parser, only leading words can name subcommands: the first other word ends the walk.
       `  for w in "\${COMP_WORDS[@]:1:COMP_CWORD-1}"; do`,
       `    case "$cmd:$w" in`,
@@ -69,6 +71,7 @@ const generator: ShellScriptGenerator = {
       `    COMPREPLY=($(compgen -W "$opts" -- "$cur"))`,
       `  elif [[ -z $stop ]]; then`,
       `    COMPREPLY=($(compgen -W "$subs" -- "$cur"))`,
+      `    [[ -n $files ]] && COMPREPLY+=($(compgen -f -- "$cur"))`,
       `  fi`,
       `}`,
       `complete -o default -F ${fn} ${bin}`,
