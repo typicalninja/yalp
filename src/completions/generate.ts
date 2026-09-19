@@ -2,8 +2,9 @@ import { type Command, defineCommand, findSubCommand } from "../command.js";
 import { ConfigError } from "../errors.js";
 import bash from "./bash.js";
 import fish from "./fish.js";
+import zsh from "./zsh.js";
 
-const generators = [bash, fish];
+const generators = [bash, fish, zsh];
 
 /** Returns a copy of `root` with the built-in `completions` command added. */
 export function rootWithCompletionsCommand(root: Command): Command {
