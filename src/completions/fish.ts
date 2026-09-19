@@ -37,8 +37,10 @@ const generator: ShellScriptGenerator = {
       // A group that also takes positionals keeps file completion next to its subcommands.
       const noFiles = cmd.positionals.length ? "" : " -f";
       for (const sub of cmd.commands) {
+        // Only the summary line of a multi-line description fits a completion menu.
+        const summary = sub.description?.split("\n", 1)[0];
         lines.push(
-          `complete -c ${bin}${subWhen}${noFiles} -a ${fishQuote(sub.name)}${describe(sub.description)}`,
+          `complete -c ${bin}${subWhen}${noFiles} -a ${fishQuote(sub.name)}${describe(summary)}`,
         );
         visitNode(sub, [...levels, seen([sub.name, ...sub.alias])]);
       }

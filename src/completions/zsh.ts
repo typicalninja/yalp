@@ -43,9 +43,11 @@ const generator: ShellScriptGenerator = {
 
       if (cmd.commands.length) {
         specs.push(posixQuote("1: :->cmds"), posixQuote("*:: :->args"));
-        const cmds = cmd.commands.map((c) =>
-          posixQuote(c.description ? `${c.name}:${c.description}` : c.name),
-        );
+        // Only the summary line of a multi-line description fits a completion menu.
+        const cmds = cmd.commands.map((c) => {
+          const summary = c.description?.split("\n", 1)[0];
+          return posixQuote(summary ? `${c.name}:${summary}` : c.name);
+        });
         // A group that also takes positionals offers files next to its subcommands.
         const [first] = cmd.positionals;
         const files = first !== undefined && action(first) === "_files";

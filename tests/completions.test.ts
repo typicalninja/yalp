@@ -45,7 +45,9 @@ const root = defineCommand({
 const mixed = defineCommand({
   name: "greet",
   positionals: { file: {} },
-  commands: [defineCommand({ name: "sub", description: "Summary line", action: noop })],
+  commands: [
+    defineCommand({ name: "sub", description: "Summary line\nMore detail", action: noop }),
+  ],
   action: noop,
 });
 
@@ -259,6 +261,10 @@ describe("fish completions", () => {
     );
   });
 
+  it("describes a subcommand by the first line of its description", () => {
+    expect(fish.generate(mixed)).not.toContain("More detail");
+  });
+
   it("adds no condition for a root without subcommands", () => {
     const solo = fish.generate(defineCommand({ name: "solo", options: { x: {} }, action: noop }));
     expect(solo).toContain("complete -c solo -l x -r");
@@ -382,6 +388,10 @@ describe("zsh completions", () => {
     );
     expect(out).toContain("*) _files ;;");
     expect(script).not.toContain("*) _files ;;");
+  });
+
+  it("describes a subcommand by the first line of its description", () => {
+    expect(zsh.generate(mixed)).toContain("'sub:Summary line'");
   });
 
   it("activates by sourcing", () => {
