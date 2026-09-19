@@ -13,8 +13,12 @@ const generator: ShellScriptGenerator = {
     const bin = root.name;
     const lines = [`# fish completion for ${bin}`, `complete -c ${bin} -e`];
     const visitNode = (cmd: Command, levels: string[][]) => {
-      const conditions = levels.length ? levels.map(seen) : ["__fish_use_subcommand"];
-      const when = quote(conditions.join("; and "));
+      // Active once every ancestor was typed and none of this command's own subcommands has been.
+      const conditions = levels.map(seen);
+      if (cmd.commands.length) {
+        conditions.push(`not ${seen(cmd.commands.flatMap((c) => [c.name, ...c.alias]))}`);
+      }
+      const when = conditions.length ? ` -n ${quote(conditions.join("; and "))}` : "";
 
       for (const o of Object.values(cmd.options)) {
         const flags = `${o.short ? `-s ${o.short} ` : ""}-l ${o.name}`;
@@ -25,12 +29,12 @@ const generator: ShellScriptGenerator = {
           value = " -r";
         }
 
-        lines.push(`complete -c ${bin} -n ${when} ${flags}${value}${describe(o.description)}`);
+        lines.push(`complete -c ${bin}${when} ${flags}${value}${describe(o.description)}`);
       }
 
       for (const sub of cmd.commands) {
         lines.push(
-          `complete -c ${bin} -n ${when} -f -a ${quote(sub.name)}${describe(sub.description)}`,
+          `complete -c ${bin}${when} -f -a ${quote(sub.name)}${describe(sub.description)}`,
         );
         visitNode(sub, [...levels, [sub.name, ...sub.alias]]);
       }
