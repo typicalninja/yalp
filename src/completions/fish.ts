@@ -12,9 +12,9 @@ const generator: ShellScriptGenerator = {
   generate: (root) => {
     const bin = root.name;
     const lines = [`# fish completion for ${bin}`, `complete -c ${bin} -e`];
-    const visitNode = (cmd: Command, levels: string[][]) => {
+    const visitNode = (cmd: Command, levels: string[]) => {
       // Active once every ancestor was typed and none of this command's own subcommands has been.
-      const conditions = levels.map(seen);
+      const conditions = [...levels];
       if (cmd.commands.length) {
         conditions.push(`not ${seen(cmd.commands.flatMap((c) => [c.name, ...c.alias]))}`);
       }
@@ -36,7 +36,7 @@ const generator: ShellScriptGenerator = {
         lines.push(
           `complete -c ${bin}${when} -f -a ${quote(sub.name)}${describe(sub.description)}`,
         );
-        visitNode(sub, [...levels, [sub.name, ...sub.alias]]);
+        visitNode(sub, [...levels, seen([sub.name, ...sub.alias])]);
       }
     };
 
