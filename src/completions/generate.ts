@@ -13,7 +13,9 @@ export function rootWithCompletionsCommand(root: Command): Command {
     );
   }
 
-  const bin = root.name;
+  // Copy so the user's root isn't mutated, while generators still see `completions` in the tree.
+  const rootCopy = { ...root };
+  const bin = rootCopy.name;
   const completions = defineCommand({
     name: "completions",
     description: "Generate a shell completion script",
@@ -21,10 +23,12 @@ export function rootWithCompletionsCommand(root: Command): Command {
       defineCommand({
         name: generator.name,
         description: `Generate ${generator.name} completion script. Load it with: "${generator.completionActivateMessage(bin)}"`,
-        action: () => console.log(generator.generate(root)),
+        action: () => console.log(generator.generate(rootCopy)),
       }),
     ),
   });
 
-  return { ...root, commands: [...root.commands, completions] };
+  rootCopy.commands = [...rootCopy.commands, completions];
+
+  return rootCopy;
 }
