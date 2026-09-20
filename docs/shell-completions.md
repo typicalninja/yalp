@@ -32,10 +32,16 @@ Options:
 Current session:
 
 ```sh
-eval "$(my-app completions bash)"
+source <(my-app completions bash)
 ```
 
-Every session: the same line in `~/.bashrc`. The `eval` form works on the bash 3.2 that macOS ships, where `source <(...)` loads nothing.
+Every session: the same line in `~/.bashrc`.
+
+In bash 3.2, `source <(...)` registers no completions and prints no error. `eval` works in that version:
+
+```sh
+eval "$(my-app completions bash)"
+```
 
 ### fish
 
