@@ -336,6 +336,34 @@ describe("parse: boolean positionals", () => {
   });
 });
 
+describe("parse: repeated boolean options", () => {
+  const cmd = defineCommand({
+    name: "app",
+    options: {
+      verbose: { type: "boolean", short: "v", multiple: true },
+      quiet: { type: "boolean", short: "q" },
+    },
+  });
+  const verbose = (argv: string[]) => ok(argv, cmd).options.verbose;
+
+  it("collects one entry per occurrence, so -vvv counts three", () => {
+    expect(verbose(["-vvv"])).toEqual([true, true, true]);
+    expect(verbose(["-v", "-v", "--verbose"])).toEqual([true, true, true]);
+  });
+
+  it("counts occurrences inside a cluster with other flags", () => {
+    expect(verbose(["-vqv"])).toEqual([true, true]);
+  });
+
+  it("records a negation as false, in order", () => {
+    expect(verbose(["--verbose", "--no-verbose", "-v"])).toEqual([true, false, true]);
+  });
+
+  it("is an empty array when the flag is absent", () => {
+    expect(verbose([])).toEqual([]);
+  });
+});
+
 describe("parse: coercion & defaults", () => {
   it("parses a number option", () => {
     const result = ok(["--port=8080", "x"]);
