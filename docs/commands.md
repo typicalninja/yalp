@@ -22,18 +22,20 @@ const build = defineCommand({
 });
 ```
 
-| Field         | Type        | Description                                                   |
-| ------------- | ----------- | ------------------------------------------------------------- |
-| `name`        | `string`    | Required. The word that selects the command.                  |
-| `description` | `string`    | Help text.                                                    |
-| `alias`       | `string[]`  | Alternative names.                                            |
-| `options`     | object      | Named parameters. See [Options and positionals][params].      |
-| `positionals` | object      | Ordered parameters. See [Options and positionals][params].    |
-| `commands`    | `Command[]` | Subcommands.                                                  |
-| `action`      | function    | The handler. See [Actions](#actions).                         |
-| `examples`    | `Example[]` | Sample invocations listed in help. See [Examples](#examples). |
+| Field         | Type                 | Description                                                   |
+| ------------- | -------------------- | ------------------------------------------------------------- |
+| `name`        | `string`             | Required. The word that selects the command.                  |
+| `description` | `string`             | Help text.                                                    |
+| `alias`       | `readonly string[]`  | Alternative names.                                            |
+| `options`     | object               | Named parameters. See [Options and positionals][params].      |
+| `positionals` | object               | Ordered parameters. See [Options and positionals][params].    |
+| `commands`    | `readonly Command[]` | Subcommands.                                                  |
+| `action`      | function             | The handler. See [Actions](#actions).                         |
+| `examples`    | `readonly Example[]` | Sample invocations listed in help. See [Examples](#examples). |
 
 [params]: ./options-and-positionals.md
+
+The array fields accept `readonly` arrays, so values declared `as const` are valid. The command keeps its own copy of each array.
 
 A command is plain data. `defineCommand` validates it and returns a readonly object. Commands can be stored in arrays, exported from modules, and reused in several parents.
 
