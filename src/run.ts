@@ -119,8 +119,9 @@ function tip(command: Command, issue: Issue): string | undefined {
     );
   }
   if (issue.code === "ERR_INVALID_CHOICE" && issue.param) {
-    const param =
-      command.options[issue.param] ?? command.positionals.find((p) => p.name === issue.param);
+    const param = Object.hasOwn(command.options, issue.param)
+      ? command.options[issue.param]
+      : command.positionals.find((p) => p.name === issue.param);
     return suggest(value, (param?.choices ?? []).map(String));
   }
   return undefined;

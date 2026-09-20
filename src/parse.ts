@@ -143,10 +143,11 @@ export function parse(
     if (token.startsWith("--")) {
       const eq = token.indexOf("=");
       let name = eq === -1 ? token.slice(2) : token.slice(2, eq);
-      const negated = !command.options[name] && name.startsWith("no-");
+      // Own-property lookups: `--constructor` must not resolve to an Object.prototype member.
+      const negated = !Object.hasOwn(command.options, name) && name.startsWith("no-");
       if (negated) name = name.slice(3);
 
-      const option = command.options[name];
+      const option = Object.hasOwn(command.options, name) ? command.options[name] : undefined;
       if (!option || (negated && option.type !== "boolean")) {
         add("ERR_UNKNOWN_OPTION", `unknown option "${token}"`, undefined, name);
         continue;

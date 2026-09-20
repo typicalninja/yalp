@@ -96,6 +96,20 @@ describe("parse: long options", () => {
     expect(result.issues[0]).toMatchObject({ code: "ERR_UNKNOWN_OPTION", value: "bogus" });
   });
 
+  it.each(["constructor", "toString", "hasOwnProperty", "__proto__"])(
+    "reports --%s as an unknown option instead of resolving it on Object.prototype (regression)",
+    (name) => {
+      expect(fail([`--${name}`]).issues[0]).toMatchObject({ code: "ERR_UNKNOWN_OPTION" });
+      expect(fail([`--${name}=x`]).issues[0]).toMatchObject({ code: "ERR_UNKNOWN_OPTION" });
+      expect(fail([`--no-${name}`]).issues[0]).toMatchObject({ code: "ERR_UNKNOWN_OPTION" });
+    },
+  );
+
+  it("still accepts an option that is genuinely named constructor", () => {
+    const cmd = defineCommand({ name: "app", options: { constructor: {} } });
+    expect(ok(["--constructor=x"], cmd).options.constructor).toBe("x");
+  });
+
   it("reports ERR_MISSING_VALUE when a value-taking long option has no value", () => {
     const result = fail(["--env"]);
     expect(result.issues.some((i) => i.code === "ERR_MISSING_VALUE" && i.param === "env")).toBe(
