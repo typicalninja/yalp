@@ -3,33 +3,20 @@ import { describe, expect, it } from "vitest";
 import { suggest } from "../src/suggest.js";
 
 describe("suggest", () => {
-  it("returns the closest candidate within the edit-distance budget", () => {
-    expect(suggest("hlp", ["help", "version"])).toBe("help");
+  it.each([
+    ["a typo", "hlp", ["help", "version"], "help"],
+    ["a different case", "HELP", ["help", "version"], "help"],
+    ["the nearest of several", "colr", ["collection", "color"], "color"],
+    // the budget is max(2, floor(length / 3)), so long inputs tolerate more edits
+    ["a long input with a wider budget", "configuratoin", ["configuration"], "configuration"],
+  ])("suggests a candidate for %s", (_label, input, candidates, expected) => {
+    expect(suggest(input, candidates)).toBe(expected);
   });
 
-  it("is case-insensitive", () => {
-    expect(suggest("HELP", ["help", "version"])).toBe("help");
-  });
-
-  it("returns undefined when no candidate is close enough", () => {
-    expect(suggest("xyz", ["help", "version"])).toBeUndefined();
-  });
-
-  it("never suggests the exact input back as its own correction", () => {
-    expect(suggest("help", ["help", "version"])).toBeUndefined();
-  });
-
-  it("returns undefined for an empty candidate list", () => {
-    expect(suggest("help", [])).toBeUndefined();
-  });
-
-  it("prefers the candidate with the smaller edit distance", () => {
-    // "colr" is 1 edit from "color" and 4 from "collection"
-    expect(suggest("colr", ["color", "collection"])).toBe("color");
-  });
-
-  it("scales the distance budget with input length", () => {
-    // budget = max(2, floor(len/3)); for a 12-char input the budget is 4
-    expect(suggest("configuratoin", ["configuration"])).toBe("configuration");
+  it.each([
+    ["nothing is close enough", "xyz", ["help", "version"]],
+    ["the input is itself a candidate", "help", ["help", "version"]],
+  ])("suggests nothing when %s", (_label, input, candidates) => {
+    expect(suggest(input, candidates)).toBeUndefined();
   });
 });
