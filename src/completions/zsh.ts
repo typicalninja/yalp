@@ -47,9 +47,12 @@ const generator: ShellScriptGenerator = {
           const summary = c.description?.split("\n", 1)[0];
           return posixQuote(summary ? `${c.name}:${summary}` : c.name);
         });
-        // A group that also takes positionals offers files next to its subcommands.
+        // A group that also takes positionals offers the first one's candidates next to its
+        // subcommands: files, or `true` and `false`.
         const [first] = cmd.positionals;
-        const files = first !== undefined && action(first) === "_files";
+        const offered = first && action(first);
+        const extra =
+          offered === "_files" ? "_files" : offered === "(true false)" ? "compadd true false" : "";
         const arms = cmd.commands.map((c) => {
           visitNode(c, [...path, c.name]);
           return `        ${[c.name, ...c.alias].join("|")}) ${fnName([...path, c.name])} ;;`;
@@ -62,13 +65,13 @@ const generator: ShellScriptGenerator = {
           `    cmds)`,
           `      local -a cmds=(${cmds.join(" ")})`,
           // Mirrors the parser: only the word right after the command can be a subcommand.
-          files
-            ? `      (( CURRENT == 2 )) && { _describe -t commands command cmds; _files; } ;;`
+          extra
+            ? `      (( CURRENT == 2 )) && { _describe -t commands command cmds; ${extra}; } ;;`
             : `      (( CURRENT == 2 )) && _describe -t commands command cmds ;;`,
           `    args)`,
           `      case $line[1] in`,
           ...arms,
-          ...(files ? [`        *) _files ;;`] : []),
+          ...(extra ? [`        *) ${extra} ;;`] : []),
           `      esac ;;`,
           `  esac`,
         );

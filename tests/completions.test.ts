@@ -360,6 +360,21 @@ describe("zsh completions", () => {
     expect(flagged).toContain(`'::enabled:(true false)'`);
   });
 
+  it("offers true and false next to subcommands for a group with a boolean positional", () => {
+    const grouped = zsh.generate(
+      defineCommand({
+        name: "z",
+        positionals: { enabled: { type: "boolean" } },
+        commands: [defineCommand({ name: "sub", action: noop })],
+        action: noop,
+      }),
+    );
+    expect(grouped).toContain(
+      "(( CURRENT == 2 )) && { _describe -t commands command cmds; compadd true false; } ;;",
+    );
+    expect(grouped).toContain("*) compadd true false ;;");
+  });
+
   it("escapes spaces inside a choice list", () => {
     const spacey = zsh.generate(
       defineCommand({ name: "s", options: { o: { choices: ["a", "b c"] } }, action: noop }),
