@@ -3,6 +3,6 @@ export * from "./run.js";
 export { defineCommand } from "./command.js";
 export { parse } from "./parse.js";
 
-export type * from "./command.js";
-export type * from "./parameter.js";
-export type * from "./parse.js";
+export type { ActionArgs, Command, CommandAction, Example } from "./command.js";
+export type { Param, ParamSpec, ParamType, ParamValue } from "./parameter.js";
+export type { Issue, IssueCode, ParseResult } from "./parse.js";
