@@ -92,6 +92,23 @@ options: {
 
 A close match to the given value is suggested. See [Help and errors](./help-and-errors.md#suggestions).
 
+### Contradictory declarations
+
+`defineCommand` throws a `ConfigError` with the code `ERR_INVALID_PARAM` when the fields of one parameter contradict each other:
+
+- `choices` is empty, or its values do not match the `type`. A `number` parameter takes numeric choices, and a `string` parameter takes string choices.
+- `choices` is set on a `boolean` parameter.
+- `default` does not match the `type`.
+- `default` is outside `choices`. With `multiple: true`, every value of the default array must be among the choices.
+- `default` is an array without `multiple: true`, or `multiple: true` has a default that is not an array.
+- A positional has a `short`.
+
+```ts
+options: {
+  mode: { choices: ["dev", "prod"], default: "test" }, // throws: default is not one of its choices
+}
+```
+
 ### Repeated options
 
 With `multiple: true`, the action receives an array. The array is empty when the option is not passed.

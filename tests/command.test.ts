@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { defineCommand, findOptionByShort, findSubCommand } from "../src/command.js";
 import { ConfigError } from "../src/errors.js";
+import type { ParamSpec } from "../src/parameter.js";
 
 function configErrorCode(fn: () => unknown): string {
   try {
@@ -95,6 +96,65 @@ describe("defineCommand: option validation", () => {
   it("preserves an explicit option type", () => {
     const cmd = defineCommand({ name: "cli", options: { port: { type: "number" } } });
     expect(cmd.options.port?.type).toBe("number");
+  });
+});
+
+describe("defineCommand: parameter declaration validation", () => {
+  const contradictions: [string, ParamSpec][] = [
+    ["a default outside its choices", { choices: ["a", "b"], default: "c" }],
+    [
+      "a multiple default with a value outside its choices",
+      { multiple: true, choices: ["a"], default: ["a", "z"] },
+    ],
+    ["choices on a boolean", { type: "boolean", choices: ["a"] }],
+    ["empty choices", { choices: [] }],
+    ["string choices on a number", { type: "number", choices: ["a"] }],
+    ["number choices on a string", { choices: [1, 2] }],
+    ["a default of the wrong type", { type: "number", default: "x" }],
+    ["a scalar default on a multiple parameter", { multiple: true, default: "a" }],
+    ["an array default on a single-value parameter", { default: ["a"] }],
+  ];
+
+  describe.each([
+    ["option", (spec: ParamSpec) => defineCommand({ name: "cli", options: { p: spec } })],
+    ["positional", (spec: ParamSpec) => defineCommand({ name: "cli", positionals: { p: spec } })],
+  ])("as an %s", (_kind, define) => {
+    it.each(contradictions)("rejects %s", (_label, spec) => {
+      expect(configErrorCode(() => define(spec))).toBe("ERR_INVALID_PARAM");
+    });
+
+    it.each<[string, ParamSpec]>([
+      ["a default among its choices", { choices: ["a", "b"], default: "a" }],
+      ["numeric choices on a number", { type: "number", choices: [1, 2], default: 2 }],
+      [
+        "a multiple default among its choices",
+        { multiple: true, choices: ["a", "b"], default: ["a"] },
+      ],
+      ["choices on a multiple parameter without a default", { multiple: true, choices: ["a"] }],
+      ["a boolean default", { type: "boolean", default: true }],
+      ["a variadic boolean default", { type: "boolean", multiple: true, default: [true, false] }],
+      ["required together with a default", { required: true, default: "x" }],
+    ])("accepts %s", (_label, spec) => {
+      expect(() => define(spec)).not.toThrow();
+    });
+  });
+
+  it("rejects a short on a positional", () => {
+    expect(
+      configErrorCode(() => defineCommand({ name: "cli", positionals: { file: { short: "f" } } })),
+    ).toBe("ERR_INVALID_PARAM");
+  });
+
+  it("names the parameter and the problem in the message", () => {
+    try {
+      defineCommand({ name: "cli", options: { mode: { choices: ["a"], default: "b" } } });
+    } catch (error) {
+      expect((error as ConfigError).message).toBe(
+        'option "mode" default must be one of its choices',
+      );
+      return;
+    }
+    throw new Error("expected defineCommand to throw");
   });
 });
 

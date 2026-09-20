@@ -55,6 +55,42 @@ function check(ok: unknown, code: ConfigErrorCode, message: string): asserts ok 
   if (!ok) throw new ConfigError(message, { code });
 }
 
+/** Rejects a declaration whose fields contradict each other. */
+function checkParam(kind: "option" | "positional", key: string, spec: ParamSpec): void {
+  const at = `${kind} "${key}"`;
+  const type = spec.type ?? "string";
+  const { choices, default: fallback } = spec;
+
+  if (choices) {
+    check(type !== "boolean", "ERR_INVALID_PARAM", `${at} is a boolean and cannot have choices`);
+    check(choices.length > 0, "ERR_INVALID_PARAM", `${at} has empty choices`);
+    check(
+      choices.every((c) => typeof c === type),
+      "ERR_INVALID_PARAM",
+      `${at} choices must be of type ${type}`,
+    );
+  }
+
+  if (fallback === undefined) return;
+  const isArray = Array.isArray(fallback);
+  check(
+    isArray === Boolean(spec.multiple),
+    "ERR_INVALID_PARAM",
+    `${at} default must ${spec.multiple ? "" : "not "}be an array`,
+  );
+  const values: readonly unknown[] = isArray ? fallback : [fallback];
+  check(
+    values.every((v) => typeof v === type),
+    "ERR_INVALID_PARAM",
+    `${at} default must be of type ${type}`,
+  );
+  check(
+    !choices || values.every((v) => choices.some((c) => c === v)),
+    "ERR_INVALID_PARAM",
+    `${at} default must be one of its choices`,
+  );
+}
+
 /**
  * Defines a command.
  *
@@ -69,8 +105,8 @@ function check(ok: unknown, code: ConfigErrorCode, message: string): asserts ok 
  *
  * @param config - The command definition.
  * @returns The command.
- * @throws {ConfigError} When a name is not kebab-case, a name is reserved or duplicated, or
- *   positionals are misordered.
+ * @throws {ConfigError} When a name is not kebab-case, a name is reserved or duplicated,
+ *   positionals are misordered, or a parameter's fields contradict each other.
  */
 export function defineCommand<const O extends Specs = {}, const P extends Specs = {}>(config: {
   /** Command name. Kebab-case. */
@@ -111,12 +147,15 @@ export function defineCommand<const O extends Specs = {}, const P extends Specs 
       shorts.add(short);
     }
 
+    checkParam("option", key, spec);
     options[key] = { type: "string", ...spec, name: key };
   }
 
   const positionals: Param[] = [];
   for (const [key, spec] of Object.entries(config.positionals ?? {})) {
     check(NAME.test(key), "ERR_INVALID_NAME", `positional "${key}" must be kebab-case`);
+    check(!spec.short, "ERR_INVALID_PARAM", `positional "${key}" cannot have a short`);
+    checkParam("positional", key, spec);
 
     const prev = positionals.at(-1);
     check(
