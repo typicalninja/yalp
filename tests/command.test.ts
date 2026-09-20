@@ -267,6 +267,34 @@ describe("defineCommand: defaults & shape", () => {
     expect(cmd.action).toBe(action);
   });
 
+  it("accepts readonly arrays for alias, examples, and commands", () => {
+    const sub = defineCommand({ name: "sub" });
+    const cmd = defineCommand({
+      name: "cli",
+      alias: ["c"] as const,
+      examples: ["--watch", ["--fast", "skip checks"]] as const,
+      commands: [sub] as const,
+    });
+    expect(cmd.alias).toEqual(["c"]);
+    expect(cmd.examples).toEqual(["--watch", ["--fast", "skip checks"]]);
+    expect(cmd.commands).toEqual([sub]);
+  });
+
+  it("copies alias, examples, and commands so later changes to the inputs do not leak in", () => {
+    const alias = ["c"];
+    const examples = ["--watch"];
+    const commands = [defineCommand({ name: "sub" })];
+    const cmd = defineCommand({ name: "cli", alias, examples, commands });
+
+    alias.push("d");
+    examples.push("--fast");
+    commands.length = 0;
+
+    expect(cmd.alias).toEqual(["c"]);
+    expect(cmd.examples).toEqual(["--watch"]);
+    expect(cmd.commands).toHaveLength(1);
+  });
+
   it("leaves action undefined when not provided", () => {
     const cmd = defineCommand({ name: "cli" });
     expect(cmd.action).toBeUndefined();
