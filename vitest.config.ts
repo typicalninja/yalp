@@ -3,6 +3,12 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
+    typecheck: {
+      enabled: true,
+      include: ["tests/**/*.test-d.ts"],
+      // The root tsconfig only includes src; a type test outside the program would pass unchecked.
+      tsconfig: "./tsconfig.test.json",
+    },
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],

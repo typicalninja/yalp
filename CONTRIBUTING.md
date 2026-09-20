@@ -25,7 +25,7 @@ Useful scripts:
 | `pnpm typecheck`         | Type-check with `tsc --noEmit`   |
 | `pnpm lint` / `lint:fix` | Lint with oxlint                 |
 | `pnpm fmt` / `fmt:check` | Format with oxfmt                |
-| `pnpm test`              | Run the test suite once          |
+| `pnpm test`              | Run tests and type tests once    |
 | `pnpm test:watch`        | Run tests in watch mode          |
 | `pnpm test:coverage`     | Run tests with a coverage report |
 
