@@ -9,17 +9,18 @@ const RESERVED_SHORT = new Set(["h", "V"]);
 type Specs = Record<string, ParamSpec>;
 
 /**
- * An example invocation shown under "Examples:" in help output. A plain string is the arguments to
- * append after the command's own path (e.g. `"--watch"`); a `[args, note]` tuple adds a
- * description.
+ * Example invocation. A string is the arguments that follow the command path. A `[args, note]`
+ * tuple adds a description.
  */
 export type Example = string | readonly [args: string, note: string];
 
-/** Arguments passed to a command's action function. */
+/** Argument of a command's `action`. */
 export interface ActionArgs<O extends Specs, P extends Specs> {
+  /** Parsed options, keyed by option name. */
   options: { [K in keyof O]: ParamValue<O[K]> };
+  /** Parsed positional arguments, keyed by positional name. */
   positionals: { [K in keyof P]: ParamValue<P[K]> };
-  /** Arguments after `--`, in order. */
+  /** Arguments after a literal `--`, unparsed and in order. */
   rest: string[];
 }
 
@@ -30,15 +31,23 @@ export type CommandAction = (args: {
   rest: string[];
 }) => unknown;
 
-/** A built command. Plain data: the parser reads it, nothing mutates it. */
+/** A command, as returned by `defineCommand`. Plain data that nothing modifies after creation. */
 export interface Command {
+  /** Command name. */
   name: string;
+  /** Help text. Only the first line is listed in a parent's help. */
   description?: string;
+  /** Example invocations listed in help. */
   examples?: Example[];
+  /** Alternative names. */
   alias: string[];
+  /** Options, keyed by name. */
   options: Record<string, Param>;
+  /** Positional arguments, in fill order. */
   positionals: Param[];
+  /** Subcommands. */
   commands: Command[];
+  /** Handler, with argument types erased. */
   action?: CommandAction;
 }
 
@@ -47,18 +56,38 @@ function check(ok: unknown, code: ConfigErrorCode, message: string): asserts ok 
 }
 
 /**
- * Defines a command. Validates eagerly, so a malformed definition throws at import time rather than
- * when an end user happens to hit that code path.
+ * Defines a command.
+ *
+ * Validates the definition and returns it as plain data. Option and positional types are inferred
+ * from their declarations and reach `action`.
+ *
+ * @example
+ *   const greet = defineCommand({
+ *     name: "greet",
+ *     action: () => console.log("Hello!"),
+ *   });
+ *
+ * @param config - The command definition.
+ * @returns The command.
+ * @throws {ConfigError} When a name is not kebab-case, a name is reserved or duplicated, or
+ *   positionals are misordered.
  */
 export function defineCommand<const O extends Specs = {}, const P extends Specs = {}>(config: {
+  /** Command name. Kebab-case. */
   name: string;
+  /** Help text. Only the first line is listed in a parent's help. */
   description?: string;
-  /** Example invocations shown under "Examples:" in help output. */
+  /** Example invocations listed in help. */
   examples?: Example[];
+  /** Alternative names. Kebab-case, unique among sibling commands. */
   alias?: string[];
+  /** Options, keyed by kebab-case name. */
   options?: O;
+  /** Positional arguments, keyed by kebab-case name and filled in declaration order. */
   positionals?: P;
+  /** Subcommands. */
   commands?: Command[];
+  /** Handler. Receives the parsed `options`, `positionals`, and `rest`. May be async. */
   action?: (args: ActionArgs<O, P>) => unknown;
 }): Command {
   const { name, description, examples, alias = [], commands = [] } = config;

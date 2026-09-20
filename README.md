@@ -94,8 +94,12 @@ $ node cli.js add a.ts b.ts
 Staged: a.ts, b.ts
 ```
 
-More extensive examples live in [`examples/`](./examples), including a multi-file CLI and manual
-`parse()` usage instead of `run()`.
+Check out more complex examples in [`./examples`](./examples)
+
+## Documentation
+
+- [Guides](./docs/README.md)
+- [API reference](https://npmx.dev/package-docs/yalp-js/)
 
 ## Contributing
 

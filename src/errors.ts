@@ -1,4 +1,4 @@
-/** Base class for every error yalp throws. */
+/** Base class of yalp errors. */
 export abstract class YalpError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -10,21 +10,28 @@ export abstract class YalpError extends Error {
   }
 }
 
-/** Reasons defineCommand() rejects a command definition. */
+/** Reasons a command definition is rejected. */
 export type ConfigErrorCode =
+  /** A name is not kebab-case, or a `short` is not one letter. */
   | "ERR_INVALID_NAME"
+  /** Two sibling commands share a name or alias. */
   | "ERR_DUPLICATE_SUBCOMMAND"
+  /** Two options of one command share a `short`. */
   | "ERR_DUPLICATE_OPTION"
+  /** A name or `short` is reserved, or `completions` is defined at the root. */
   | "ERR_RESERVED_NAME"
+  /** A required positional follows an optional one, or any positional follows a variadic one. */
   | "ERR_INVALID_POSITIONAL_ORDER";
 
 /** Constructor options for {@link ConfigError}. */
 export interface ConfigErrorOptions extends ErrorOptions {
+  /** The rule that was violated. */
   code: ConfigErrorCode;
 }
 
-/** Thrown by defineCommand() when a command definition is invalid */
+/** Thrown for an invalid command definition. */
 export class ConfigError extends YalpError {
+  /** The rule that was violated. */
   readonly code: ConfigErrorCode;
   constructor(message: string, options: ConfigErrorOptions) {
     super(message, options);

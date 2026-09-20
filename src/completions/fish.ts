@@ -32,7 +32,7 @@ const generator: ShellScriptGenerator = {
         lines.push(`complete -c ${bin}${when} ${flags}${value}${describe(o.description)}`);
       }
 
-      // The parser only descends through leading words, which fish's official helper mirrors at the root.
+      // Root subcommands: `__fish_use_subcommand` mirrors the parser's leading-word rule.
       const subWhen = levels.length ? when : " -n __fish_use_subcommand";
       // A group that also takes positionals keeps file completion next to its subcommands.
       const noFiles = cmd.positionals.length ? "" : " -f";
