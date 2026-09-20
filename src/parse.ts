@@ -250,7 +250,12 @@ function coerce(param: Param, value: string | boolean, add: Add): unknown {
     // A flag arrives as a boolean; a positional arrives as the word `true` or `false`.
     if (typeof value === "boolean") return value;
     if (value === "true" || value === "false") return value === "true";
-    add("ERR_INVALID_BOOLEAN", `"${param.name}" expects true or false, got "${value}"`, param.name);
+    add(
+      "ERR_INVALID_BOOLEAN",
+      `"${param.name}" expects true or false, got "${value}"`,
+      param.name,
+      value,
+    );
     return undefined;
   }
 

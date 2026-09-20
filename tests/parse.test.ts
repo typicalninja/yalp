@@ -302,6 +302,7 @@ describe("parse: boolean positionals", () => {
       expect(fail([word], cmd).issues[0]).toMatchObject({
         code: "ERR_INVALID_BOOLEAN",
         param: "enabled",
+        value: word,
       });
     }
   });
