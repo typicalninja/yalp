@@ -1,4 +1,4 @@
-/** Base class for every error yalp throws. */
+/** Base class of yalp errors. */
 export abstract class YalpError extends Error {
   constructor(message: string, options?: ErrorOptions) {
     super(message, options);
@@ -23,7 +23,7 @@ export interface ConfigErrorOptions extends ErrorOptions {
   code: ConfigErrorCode;
 }
 
-/** Thrown by defineCommand() when a command definition is invalid */
+/** Thrown by `defineCommand()` for an invalid definition. */
 export class ConfigError extends YalpError {
   readonly code: ConfigErrorCode;
   constructor(message: string, options: ConfigErrorOptions) {

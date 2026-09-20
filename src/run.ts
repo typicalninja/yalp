@@ -65,10 +65,8 @@ export async function run(root: Command, options: RunOptions = {}): Promise<void
 
 function format(command: Command, path: string[], issues: Issue[]): string {
   const lines = [`${path.join(" ")}: ${issues.length} problem${issues.length > 1 ? "s" : ""}`, ""];
-  // Only ERR_UNEXPECTED_POSITIONAL cascades from one root typo (an unresolved
-  // subcommand's own name, plus everything after it, both fall through as
-  // extra positionals); other codes are independent mistakes and each earn
-  // their own hint.
+  // An unresolved subcommand and its trailing words all surface as unexpected positionals; only the
+  // first gets a hint.
   let positionalHinted = false;
 
   for (const issue of issues) {

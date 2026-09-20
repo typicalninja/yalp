@@ -9,9 +9,8 @@ const RESERVED_SHORT = new Set(["h", "V"]);
 type Specs = Record<string, ParamSpec>;
 
 /**
- * An example invocation shown under "Examples:" in help output. A plain string is the arguments to
- * append after the command's own path (e.g. `"--watch"`); a `[args, note]` tuple adds a
- * description.
+ * Example invocation. A string is the arguments that follow the command path. A `[args, note]`
+ * tuple adds a description.
  */
 export type Example = string | readonly [args: string, note: string];
 
@@ -56,10 +55,7 @@ function check(ok: unknown, code: ConfigErrorCode, message: string): asserts ok 
   if (!ok) throw new ConfigError(message, { code });
 }
 
-/**
- * Defines a command. Validates eagerly, so a malformed definition throws at import time rather than
- * when an end user happens to hit that code path.
- */
+/** Defines a command. Throws `ConfigError` when the definition is invalid. */
 export function defineCommand<const O extends Specs = {}, const P extends Specs = {}>(config: {
   /** Command name. Kebab-case. */
   name: string;

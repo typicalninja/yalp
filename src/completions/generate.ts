@@ -35,8 +35,7 @@ export function rootWithCompletionsCommand(root: Command): Command {
     ),
   });
 
-  // A copy, so the caller's root isn't mutated;
-  // generators run lazily and see `completions` in the tree.
+  // Copy: leaves the caller's root unmodified.
   const withCompletions: Command = { ...root, commands: [...root.commands, completions] };
   return withCompletions;
 }

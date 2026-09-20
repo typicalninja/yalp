@@ -53,7 +53,7 @@ const generator: ShellScriptGenerator = {
       `# bash completion for ${bin}`,
       `${fn}() {`,
       `  local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]} cmd= w opts= subs= files= stop=`,
-      // Like the parser, only leading words can name subcommands: the first other word ends the walk.
+      // Only leading words name subcommands; the first other word ends the walk.
       `  for w in "\${COMP_WORDS[@]:1:COMP_CWORD-1}"; do`,
       `    case "$cmd:$w" in`,
       ...arms(walk, "      "),

@@ -3,7 +3,7 @@ export type ParamType = "string" | "number" | "boolean";
 
 type TypeMap = { string: string; number: number; boolean: boolean };
 
-/** What a user writes. Every field optional; `type` defaults to "string". */
+/** Parameter declaration. */
 export interface ParamSpec {
   /** Value type. Defaults to `"string"`. */
   type?: ParamType;
