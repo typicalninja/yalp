@@ -353,6 +353,13 @@ describe("zsh completions", () => {
     expect(script).toContain(`--jobs':jobs: '`);
   });
 
+  it("completes true and false for a boolean positional", () => {
+    const flagged = zsh.generate(
+      defineCommand({ name: "z", positionals: { enabled: { type: "boolean" } }, action: noop }),
+    );
+    expect(flagged).toContain(`'::enabled:(true false)'`);
+  });
+
   it("escapes spaces inside a choice list", () => {
     const spacey = zsh.generate(
       defineCommand({ name: "s", options: { o: { choices: ["a", "b c"] } }, action: noop }),

@@ -5,13 +5,12 @@ import { posixQuote, type ShellScriptGenerator } from "./shared.js";
 // Escapes what _arguments treats as a separator inside a choice list.
 const item = (s: string): string => s.replace(/[\s()\\:]/g, "\\$&");
 
-/** The `_arguments` action: choices, files for strings, no completion for anything else. */
-const action = (p: Param): string =>
-  p.choices?.length
-    ? `(${p.choices.map((c) => item(String(c))).join(" ")})`
-    : p.type === "string"
-      ? "_files"
-      : " ";
+/** The `_arguments` action: choices, `true`/`false` for booleans, files for strings, else nothing. */
+const action = (p: Param): string => {
+  if (p.choices?.length) return `(${p.choices.map((c) => item(String(c))).join(" ")})`;
+  if (p.type === "boolean") return "(true false)";
+  return p.type === "string" ? "_files" : " ";
+};
 
 const optionSpec = (o: Param): string => {
   const names = [`--${o.name}`, ...(o.short ? [`-${o.short}`] : [])];

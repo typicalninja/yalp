@@ -15,6 +15,8 @@ export type IssueCode =
   | "ERR_MISSING_REQUIRED"
   /** A `number` parameter received text that is not a number. */
   | "ERR_INVALID_NUMBER"
+  /** A `boolean` positional received a word other than `true` or `false`. */
+  | "ERR_INVALID_BOOLEAN"
   /** A value is outside the parameter's `choices`. */
   | "ERR_INVALID_CHOICE";
 
@@ -244,8 +246,13 @@ function finalize(param: Param, values: (string | boolean)[] | undefined, add: A
 }
 
 function coerce(param: Param, value: string | boolean, add: Add): unknown {
-  // Booleans only ever reach here as real booleans; an inline value already errored.
-  if (param.type === "boolean") return value;
+  if (param.type === "boolean") {
+    // A flag arrives as a boolean; a positional arrives as the word `true` or `false`.
+    if (typeof value === "boolean") return value;
+    if (value === "true" || value === "false") return value === "true";
+    add("ERR_INVALID_BOOLEAN", `"${param.name}" expects true or false, got "${value}"`, param.name);
+    return undefined;
+  }
 
   if (param.type === "number") {
     const n = typeof value === "string" && value.trim() !== "" ? Number(value) : Number.NaN;

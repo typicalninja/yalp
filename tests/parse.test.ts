@@ -279,6 +279,48 @@ describe("parse: positionals", () => {
   });
 });
 
+describe("parse: boolean positionals", () => {
+  const cmd = defineCommand({
+    name: "app",
+    positionals: {
+      enabled: { type: "boolean", required: true },
+      more: { type: "boolean", multiple: true },
+    },
+  });
+
+  it("converts the words true and false to booleans", () => {
+    expect(ok(["true"], cmd).positionals.enabled).toBe(true);
+    expect(ok(["false"], cmd).positionals.enabled).toBe(false);
+  });
+
+  it("converts every word of a variadic boolean positional", () => {
+    expect(ok(["true", "false", "true"], cmd).positionals.more).toEqual([false, true]);
+  });
+
+  it("reports ERR_INVALID_BOOLEAN for any other word", () => {
+    for (const word of ["yes", "1", "TRUE", ""]) {
+      expect(fail([word], cmd).issues[0]).toMatchObject({
+        code: "ERR_INVALID_BOOLEAN",
+        param: "enabled",
+      });
+    }
+  });
+
+  it("falls back to the default when the positional is absent", () => {
+    const withDefault = defineCommand({
+      name: "app",
+      positionals: { enabled: { type: "boolean", default: true } },
+    });
+    expect(ok([], withDefault).positionals.enabled).toBe(true);
+    expect(ok(["false"], withDefault).positionals.enabled).toBe(false);
+  });
+
+  it("does not affect boolean options, which take flags", () => {
+    expect(ok(["--verbose", "x"]).options.verbose).toBe(true);
+    expect(fail(["--verbose=true", "x"]).issues[0]).toMatchObject({ code: "ERR_UNEXPECTED_VALUE" });
+  });
+});
+
 describe("parse: coercion & defaults", () => {
   it("parses a number option", () => {
     const result = ok(["--port=8080", "x"]);

@@ -51,16 +51,22 @@ Reserved names:
 
 ### Types
 
-| `type`      | Action receives | Parsing                                                    |
-| ----------- | --------------- | ---------------------------------------------------------- |
-| `"string"`  | `string`        | The text as given.                                         |
-| `"number"`  | `number`        | JavaScript's `Number()`. `3`, `1e3`, and `0x10` are valid. |
-| `"boolean"` | `boolean`       | Presence of the flag. Intended for options only.           |
+| `type`      | Action receives | Parsing                                                                    |
+| ----------- | --------------- | -------------------------------------------------------------------------- |
+| `"string"`  | `string`        | The text as given.                                                         |
+| `"number"`  | `number`        | JavaScript's `Number()`. `3`, `1e3`, and `0x10` are valid.                 |
+| `"boolean"` | `boolean`       | An option: presence of the flag. A positional: the word `true` or `false`. |
 
 An empty or whitespace-only value, and any text that `Number()` converts to `NaN`, is an error:
 
 ```
 ✗ "times" expects a number, got "abc"
+```
+
+A boolean positional accepts exactly `true` or `false`, in lowercase. Any other word is an error:
+
+```
+✗ "enabled" expects true or false, got "yes"
 ```
 
 ### Required and default

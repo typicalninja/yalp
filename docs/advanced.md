@@ -106,14 +106,15 @@ The `version` shape occurs only when `{ version: true }` is passed as the third 
 
 An issue has a `code`, a `message`, and, when applicable, `param` (the parameter name) and `value` (the offending word).
 
-| Code                        | Meaning                                             |
-| --------------------------- | --------------------------------------------------- |
-| `ERR_UNKNOWN_OPTION`        | The word is not an option of the command.           |
-| `ERR_MISSING_VALUE`         | An option that takes a value is the last argument.  |
-| `ERR_UNEXPECTED_VALUE`      | A boolean flag was given a value, as in `--flag=1`. |
-| `ERR_UNEXPECTED_POSITIONAL` | A word does not fit any positional.                 |
-| `ERR_MISSING_REQUIRED`      | A required parameter is missing.                    |
-| `ERR_INVALID_NUMBER`        | A `number` parameter received text that is not one. |
-| `ERR_INVALID_CHOICE`        | A value is not among the parameter's `choices`.     |
+| Code                        | Meaning                                                              |
+| --------------------------- | -------------------------------------------------------------------- |
+| `ERR_UNKNOWN_OPTION`        | The word is not an option of the command.                            |
+| `ERR_MISSING_VALUE`         | An option that takes a value is the last argument.                   |
+| `ERR_UNEXPECTED_VALUE`      | A boolean flag was given a value, as in `--flag=1`.                  |
+| `ERR_UNEXPECTED_POSITIONAL` | A word does not fit any positional.                                  |
+| `ERR_MISSING_REQUIRED`      | A required parameter is missing.                                     |
+| `ERR_INVALID_NUMBER`        | A `number` parameter received text that is not one.                  |
+| `ERR_INVALID_BOOLEAN`       | A `boolean` positional received a word other than `true` or `false`. |
+| `ERR_INVALID_CHOICE`        | A value is not among the parameter's `choices`.                      |
 
 The [`parse-manual` example](../examples/parse-manual) is a runnable version of the snippet above.
