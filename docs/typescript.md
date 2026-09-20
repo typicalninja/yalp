@@ -32,6 +32,7 @@ defineCommand({
 | `{ default: "x" }`                        | `string`                  |
 | `{ type: "boolean", default: true }`      | `boolean`                 |
 | `{ multiple: true }`                      | `string[]`                |
+| `{ type: "boolean", multiple: true }`     | `boolean[]`               |
 | `{ choices: ["a", "b"] }`                 | `"a" \| "b" \| undefined` |
 | `{ choices: ["a", "b"], required: true }` | `"a" \| "b"`              |
 | `{ type: "number", choices: [1, 2] }`     | `1 \| 2 \| undefined`     |
