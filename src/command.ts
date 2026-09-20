@@ -114,15 +114,15 @@ export function defineCommand<const O extends Specs = {}, const P extends Specs 
   /** Help text. Only the first line is listed in a parent's help. */
   description?: string;
   /** Example invocations listed in help. */
-  examples?: Example[];
+  examples?: readonly Example[];
   /** Alternative names. Kebab-case, unique among sibling commands. */
-  alias?: string[];
+  alias?: readonly string[];
   /** Options, keyed by kebab-case name. */
   options?: O;
   /** Positional arguments, keyed by kebab-case name and filled in declaration order. */
   positionals?: P;
   /** Subcommands. */
-  commands?: Command[];
+  commands?: readonly Command[];
   /** Handler. Receives the parsed `options`, `positionals`, and `rest`. May be async. */
   action?: (args: ActionArgs<O, P>) => unknown;
 }): Command {
@@ -183,11 +183,11 @@ export function defineCommand<const O extends Specs = {}, const P extends Specs 
   return {
     name,
     description,
-    examples,
-    alias,
+    examples: examples && [...examples],
+    alias: [...alias],
     options,
     positionals,
-    commands,
+    commands: [...commands],
     action: config.action as CommandAction | undefined,
   };
 }
