@@ -113,6 +113,7 @@ When the environment variable `DEBUG` is set, the stack trace of a failed action
 | `ERR_DUPLICATE_SUBCOMMAND`     | Two sibling commands share a name or alias.                                                                                                                       |
 | `ERR_DUPLICATE_OPTION`         | Two options of one command share a `short`.                                                                                                                       |
 | `ERR_INVALID_POSITIONAL_ORDER` | A required positional follows an optional one, or any positional follows a variadic one.                                                                          |
+| `ERR_INVALID_PARAM`            | The fields of a parameter contradict each other. See [Contradictory declarations](./options-and-positionals.md#contradictory-declarations).                       |
 
 ```ts
 import { ConfigError, defineCommand } from "yalp-js";
