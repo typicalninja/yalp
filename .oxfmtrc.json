@@ -2,5 +2,5 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "sortImports": true,
   "jsdoc": true,
-  "ignorePatterns": ["dist/**", "jsr.jsonc"],
+  "ignorePatterns": ["dist/**", "jsr.jsonc"]
 }
