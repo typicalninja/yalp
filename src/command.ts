@@ -14,13 +14,13 @@ type Specs = Record<string, ParamSpec>;
  */
 export type Example = string | readonly [args: string, note: string];
 
-/** Arguments passed to a command's action function. */
+/** Argument of a command's `action`. */
 export interface ActionArgs<O extends Specs, P extends Specs> {
   /** Parsed options, keyed by option name. */
   options: { [K in keyof O]: ParamValue<O[K]> };
   /** Parsed positional arguments, keyed by positional name. */
   positionals: { [K in keyof P]: ParamValue<P[K]> };
-  /** Arguments after `--`, in order. */
+  /** Arguments after a literal `--`, unparsed and in order. */
   rest: string[];
 }
 
@@ -31,7 +31,7 @@ export type CommandAction = (args: {
   rest: string[];
 }) => unknown;
 
-/** A built command. Plain data: the parser reads it, nothing mutates it. */
+/** A command, as returned by `defineCommand`. Plain data that nothing modifies after creation. */
 export interface Command {
   /** Command name. */
   name: string;
@@ -55,7 +55,23 @@ function check(ok: unknown, code: ConfigErrorCode, message: string): asserts ok 
   if (!ok) throw new ConfigError(message, { code });
 }
 
-/** Defines a command. Throws `ConfigError` when the definition is invalid. */
+/**
+ * Defines a command.
+ *
+ * Validates the definition and returns it as plain data. Option and positional types are inferred
+ * from their declarations and reach `action`.
+ *
+ * @example
+ *   const greet = defineCommand({
+ *     name: "greet",
+ *     action: () => console.log("Hello!"),
+ *   });
+ *
+ * @param config - The command definition.
+ * @returns The command.
+ * @throws {ConfigError} When a name is not kebab-case, a name is reserved or duplicated, or
+ *   positionals are misordered.
+ */
 export function defineCommand<const O extends Specs = {}, const P extends Specs = {}>(config: {
   /** Command name. Kebab-case. */
   name: string;

@@ -1,46 +1,64 @@
 import { findOptionByShort, findSubCommand, type Command } from "./command.js";
 import type { Param } from "./parameter.js";
 
-/** Reasons parse() rejects a token. */
+/** Reasons {@link parse} reports a problem. */
 export type IssueCode =
+  /** The word is not an option of the command. */
   | "ERR_UNKNOWN_OPTION"
+  /** An option that takes a value has none. */
   | "ERR_MISSING_VALUE"
+  /** A boolean flag was given a value. */
   | "ERR_UNEXPECTED_VALUE"
+  /** A word fits no positional. */
   | "ERR_UNEXPECTED_POSITIONAL"
+  /** A required parameter is missing. */
   | "ERR_MISSING_REQUIRED"
+  /** A `number` parameter received text that is not a number. */
   | "ERR_INVALID_NUMBER"
+  /** A value is outside the parameter's `choices`. */
   | "ERR_INVALID_CHOICE";
 
-/** One problem found while parsing argv. */
+/** One problem found while parsing. */
 export interface Issue {
+  /** Identifies the kind of problem. */
   code: IssueCode;
+  /** Human-readable description. */
   message: string;
-  /** Parameter name, when the issue is about one. */
+  /** Parameter name, when the issue concerns a parameter. */
   param?: string;
-  /** The offending token, for "did you mean" suggestions. */
+  /** The offending word, when there is one. */
   value?: string;
 }
 
 interface Resolved {
+  /** The command the arguments resolved to. */
   command: Command;
-  /** Command names from root to matched, for usage lines. */
+  /** Command names from the root to `command`. */
   path: string[];
 }
 
 /**
- * The result of {@link parse}: a successful run, help, or version match, or a failed parse with
- * issues.
+ * Result of {@link parse}. Check `ok` first, then `kind`.
+ *
+ * When `ok` is `false`, `issues` lists every problem found.
  */
 export type ParseResult =
+  /** Valid arguments. */
   | (Resolved & {
       ok: true;
       kind: "run";
+      /** Parsed options, keyed by option name. */
       options: Record<string, unknown>;
+      /** Parsed positional arguments, keyed by positional name. */
       positionals: Record<string, unknown>;
+      /** Arguments after a literal `--`. */
       rest: string[];
     })
+  /** Help was requested. */
   | (Resolved & { ok: true; kind: "help" })
+  /** The version was requested. */
   | (Resolved & { ok: true; kind: "version" })
+  /** The arguments were invalid. */
   | (Resolved & { ok: false; issues: Issue[] });
 
 type Add = (code: IssueCode, message: string, param?: string, value?: string) => void;
@@ -48,12 +66,29 @@ type Add = (code: IssueCode, message: string, param?: string, value?: string) =>
 const HELP = new Set(["-h", "--help"]);
 const VERSION = new Set(["-V", "--version"]);
 
-/** Parses argv against a command tree. Never throws on user input. */
+/**
+ * Parses arguments against a command tree without printing or running anything.
+ *
+ * Invalid user input is reported in the result and never thrown.
+ *
+ * @example
+ *   const result = parse(cli, process.argv.slice(2));
+ *   if (!result.ok) console.error(result.issues);
+ *
+ * @param root - The root command.
+ * @param argv - The arguments, without the executable and script path.
+ * @param config - Parse options.
+ * @returns The {@link ParseResult}.
+ */
 export function parse(
   root: Command,
   argv: string[],
   config: {
-    /** Enables -V / --version on the root command. Defaults to `false`. */
+    /**
+     * Enables `-V` and `--version` on the root command.
+     *
+     * @default false
+     */
     version?: boolean;
   } = {},
 ): ParseResult {

@@ -6,15 +6,37 @@ import { suggest } from "./suggest.js";
 
 /** Options for {@link run}. */
 export interface RunOptions {
-  /** Arguments to parse. Defaults to `process.argv.slice(2)`. */
+  /**
+   * Arguments to parse.
+   *
+   * @default process.argv.slice(2)
+   */
   argv?: string[];
-  /** Enables -V / --version on the root command. Omit to disable. */
+  /** Version printed by `-V` and `--version`. Omitted: the flags are disabled. */
   version?: string;
-  /** Adds the built-in `completions` command. Defaults to `true`. */
+  /**
+   * Adds the built-in `completions` command.
+   *
+   * @default true
+   */
   completions?: boolean;
 }
 
-/** Parses argv, prints help or errors, runs the matched action. Sets process.exitCode. */
+/**
+ * Parses arguments, prints help or errors, and runs the matched command's action.
+ *
+ * Sets `process.exitCode` and returns. The code is 1 when the action throws, and 2 for invalid
+ * arguments or a command with subcommands run without one.
+ *
+ * @example
+ *   await run(cli, { version: "1.0.0" });
+ *
+ * @param root - The root command.
+ * @param options - Run options.
+ * @returns A promise that settles after the action has finished.
+ * @throws {ConfigError} With code `ERR_RESERVED_NAME` when `root` defines a command or alias named
+ *   `completions` and the built-in command is enabled.
+ */
 export async function run(root: Command, options: RunOptions = {}): Promise<void> {
   const { argv = process.argv.slice(2), version, completions = true } = options;
   const effectiveRoot = completions ? rootWithCompletionsCommand(root) : root;
