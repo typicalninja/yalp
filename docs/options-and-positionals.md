@@ -143,6 +143,30 @@ $ my-app --no-verify      # options.verify is false
 
 A boolean flag takes no value. `--verify=false` is an error that names `--no-verify`.
 
+### Counting flags
+
+A boolean option with `multiple: true` collects one entry per occurrence. This supports counting flags such as `-vvv`.
+
+```ts
+options: {
+  verbose: { type: "boolean", short: "v", multiple: true, description: "Increase output" },
+}
+```
+
+| Input                       | `options.verbose`     |
+| --------------------------- | --------------------- |
+| _(none)_                    | `[]`                  |
+| `-v`                        | `[true]`              |
+| `-vvv`                      | `[true, true, true]`  |
+| `-v -v --verbose`           | `[true, true, true]`  |
+| `--verbose --no-verbose -v` | `[true, false, true]` |
+
+Each `--no-verbose` adds a `false` in its position. The action counts the `true` entries:
+
+```ts
+const level = options.verbose.filter(Boolean).length;
+```
+
 ## Positionals
 
 Positionals are filled in declaration order. `defineCommand` throws a `ConfigError` for two orderings:
