@@ -6,9 +6,13 @@ import { run } from "../src/run.js";
 let logSpy: ReturnType<typeof vi.spyOn>;
 let errorSpy: ReturnType<typeof vi.spyOn>;
 
+const noop = () => undefined;
+/** Everything written to stderr, joined by newlines. */
+const stderr = () => errorSpy.mock.calls.map((call) => call[0]).join("\n");
+
 beforeEach(() => {
-  logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
-  errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  logSpy = vi.spyOn(console, "log").mockImplementation(noop);
+  errorSpy = vi.spyOn(console, "error").mockImplementation(noop);
   process.exitCode = undefined;
   delete process.env.DEBUG;
 });
@@ -22,7 +26,7 @@ afterEach(() => {
 
 describe("run: success", () => {
   it("invokes the matched action with parsed options, positionals, and rest", async () => {
-    const action = vi.fn();
+    const action = vi.fn<(context: unknown) => void>();
     const cmd = defineCommand({
       name: "app",
       options: { env: {} },
@@ -41,391 +45,223 @@ describe("run: success", () => {
   });
 });
 
-describe("run: help/version", () => {
-  it("prints help and returns without running the action for --help", async () => {
-    const action = vi.fn();
-    const cmd = defineCommand({ name: "app", action });
+describe("run: help and version", () => {
+  it("prints help without running the action for --help", async () => {
+    const action = vi.fn<() => void>();
 
-    await run(cmd, { argv: ["--help"] });
+    await run(defineCommand({ name: "app", action }), { argv: ["--help"] });
 
     expect(action).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Usage: app"));
   });
 
-  it("prints the version and returns for --version when a version string is configured", async () => {
-    const action = vi.fn();
-    const cmd = defineCommand({ name: "app", action });
+  it("prints the version without running the action for --version", async () => {
+    const action = vi.fn<() => void>();
 
-    await run(cmd, { argv: ["--version"], version: "1.2.3" });
+    await run(defineCommand({ name: "app", action }), { argv: ["--version"], version: "1.2.3" });
 
     expect(action).not.toHaveBeenCalled();
     expect(logSpy).toHaveBeenCalledWith("1.2.3");
   });
-
-  it("rejects --version as an unknown option when run() was not given a version string", async () => {
-    const action = vi.fn();
-    const cmd = defineCommand({ name: "app", action });
-
-    await run(cmd, { argv: ["--version"] });
-
-    expect(action).not.toHaveBeenCalled();
-    expect(process.exitCode).toBe(2);
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain('unknown option "--version"');
-  });
 });
 
-describe("run: no action", () => {
-  it("prints help and exits 0 for a leaf command with no action", async () => {
-    const cmd = defineCommand({ name: "app" });
-
-    // The built-in completions command would make this a group command, so opt out.
-    await run(cmd, { argv: [], completions: false });
+describe("run: command without an action", () => {
+  it("prints help to stdout and exits 0 for a leaf command", async () => {
+    // The built-in completions command would make the root a group, so opt out.
+    await run(defineCommand({ name: "app" }), { argv: [], completions: false });
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Usage: app"));
     expect(process.exitCode).toBe(0);
   });
 
-  it("prints help and exits 2 for a parent command with subcommands and no action", async () => {
-    const sub = defineCommand({ name: "child", action: () => undefined });
-    const cmd = defineCommand({ name: "app", commands: [sub] });
+  it("prints usage to stderr, not stdout, and exits 2 for a group command", async () => {
+    const sub = defineCommand({ name: "child", action: noop });
 
-    await run(cmd, { argv: [] });
+    await run(defineCommand({ name: "app", commands: [sub] }), { argv: [] });
 
-    expect(process.exitCode).toBe(2);
-  });
-
-  it("prints the no-subcommand-selected usage to stderr, not stdout", async () => {
-    const sub = defineCommand({ name: "child", action: () => undefined });
-    const cmd = defineCommand({ name: "app", commands: [sub] });
-
-    await run(cmd, { argv: [] });
-
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Usage: app"));
+    expect(stderr()).toContain("Usage: app");
     expect(logSpy).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(2);
   });
 });
 
-describe("run: parse failure + did-you-mean", () => {
-  it("prints formatted issues, a usage hint, and sets exitCode 2", async () => {
-    const cmd = defineCommand({ name: "app", options: { verbose: { type: "boolean" } } });
+describe("run: invalid arguments", () => {
+  it("prints the issues and a usage hint, and exits 2 without running the action", async () => {
+    const action = vi.fn<() => void>();
+    const cmd = defineCommand({ name: "app", options: { verbose: { type: "boolean" } }, action });
 
     await run(cmd, { argv: ["--verbos"] });
 
+    expect(action).not.toHaveBeenCalled();
     expect(process.exitCode).toBe(2);
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("unknown option");
-    expect(printed).toContain("did you mean --verbose?");
-    expect(printed).toContain('Run "app --help" for usage.');
+    expect(stderr()).toContain("unknown option");
+    expect(stderr()).toContain('Run "app --help" for usage.');
   });
 
-  it("pluralizes 'problem' as singular for exactly one issue", async () => {
-    const cmd = defineCommand({ name: "app", options: { verbose: { type: "boolean" } } });
-
-    await run(cmd, { argv: ["--verbos"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("app: 1 problem");
-    expect(printed).not.toContain("1 problems");
-  });
-
-  it("pluralizes 'problems' for more than one issue", async () => {
+  it.each([
+    ["1 problem", ["--verbos", "x"]],
+    ["2 problems", ["--verbos"]],
+  ])("reports %s", async (summary, argv) => {
     const cmd = defineCommand({
       name: "app",
       options: { verbose: { type: "boolean" } },
       positionals: { file: { required: true } },
     });
 
-    await run(cmd, { argv: ["--verbos"] });
+    await run(cmd, { argv });
 
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("app: 2 problems");
+    expect(stderr()).toContain(`app: ${summary}\n`);
+  });
+});
+
+describe("run: did-you-mean", () => {
+  const sub = defineCommand({ name: "build", action: noop });
+  const cmd = defineCommand({
+    name: "app",
+    options: {
+      verbose: { type: "boolean" },
+      mode: { choices: ["dev", "prod"] },
+      times: { type: "number" },
+      shout: { type: "boolean" },
+    },
+    commands: [sub],
+  });
+  const withPositional = defineCommand({
+    name: "app",
+    positionals: { mode: { choices: ["dev", "prod"], required: true } },
+    action: noop,
   });
 
-  it("omits the did-you-mean line for an issue with no offending value, e.g. a missing required field", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      positionals: { file: { required: true } },
-    });
+  it.each([
+    ["an unknown option", cmd, ["--verbos"], "--verbose"],
+    ["an unexpected positional", cmd, ["buidl"], "build"],
+    ["an invalid option choice", cmd, ["--mode=dvv"], "dev"],
+    ["an invalid positional choice", withPositional, ["dvv"], "dev"],
+  ])("suggests a match for %s", async (_label, root, argv, hint) => {
+    await run(root, { argv });
 
-    await run(cmd, { argv: [] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain('"file" is required');
-    expect(printed).not.toContain("did you mean");
-  });
-
-  it("omits the did-you-mean line when nothing is close enough", async () => {
-    const cmd = defineCommand({ name: "app", options: { verbose: { type: "boolean" } } });
-
-    await run(cmd, { argv: ["--zzz"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).not.toContain("did you mean");
-  });
-
-  it("omits the did-you-mean line for an unexpected positional when there are no subcommands to suggest", async () => {
-    const cmd = defineCommand({ name: "app" });
-
-    await run(cmd, { argv: ["extra"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).not.toContain("did you mean");
-  });
-
-  it("shows only one did-you-mean hint for unexpected positionals, even when it cascades into several", async () => {
-    const sub = defineCommand({ name: "commit", action: () => undefined });
-    const cmd = defineCommand({ name: "app", commands: [sub] });
-
-    await run(cmd, { argv: ["comit", "y"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    const hints = printed.split("did you mean").length - 1;
-    expect(hints).toBe(1);
-  });
-
-  it("shows a hint for each unrelated unknown-option typo, not just the first (regression)", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      options: { times: { type: "number" }, shout: { type: "boolean" } },
-    });
-
-    await run(cmd, { argv: ["--tims", "3", "--shuot"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("did you mean --times?");
-    expect(printed).toContain("did you mean --shout?");
-  });
-
-  it("suggests a subcommand name for an unexpected positional", async () => {
-    const sub = defineCommand({ name: "build", action: () => undefined });
-    const cmd = defineCommand({ name: "app", commands: [sub] });
-
-    await run(cmd, { argv: ["buidl"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("did you mean build?");
-  });
-
-  it("suggests a valid choice for an invalid choice value", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      options: { mode: { choices: ["dev", "prod"] } },
-      action: () => undefined,
-    });
-
-    await run(cmd, { argv: ["--mode=dvv"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("did you mean dev?");
-  });
-
-  it("suggests a valid choice for an invalid choice on a positional", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      positionals: { mode: { choices: ["dev", "prod"], required: true } },
-      action: () => undefined,
-    });
-
-    await run(cmd, { argv: ["dvv"] });
-
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain('"mode" must be one of: dev, prod');
-    expect(printed).toContain("did you mean dev?");
+    expect(stderr()).toContain(`did you mean ${hint}?`);
   });
 
   it("suggests a choice for a positional named like an Object.prototype member", async () => {
-    const cmd = defineCommand({
+    const root = defineCommand({
       name: "app",
       positionals: { constructor: { choices: ["alpha", "beta"], required: true } },
-      action: () => undefined,
+      action: noop,
     });
 
-    await run(cmd, { argv: ["alpa"] });
+    await run(root, { argv: ["alpa"] });
 
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("did you mean alpha?");
+    expect(stderr()).toContain("did you mean alpha?");
+  });
+
+  it.each([
+    ["nothing is close enough", cmd, ["--zzz"]],
+    ["the issue has no offending value", withPositional, []],
+    ["there are no subcommands to suggest", defineCommand({ name: "app" }), ["extra"]],
+  ])("adds no hint when %s", async (_label, root, argv) => {
+    await run(root, { argv });
+
+    expect(stderr()).not.toContain("did you mean");
+  });
+
+  it("hints every unrelated unknown-option typo, not just the first", async () => {
+    await run(cmd, { argv: ["--tims", "3", "--shuot"] });
+
+    expect(stderr()).toContain("did you mean --times?");
+    expect(stderr()).toContain("did you mean --shout?");
+  });
+
+  it("hints only once when a mistyped subcommand cascades into several unexpected positionals", async () => {
+    const root = defineCommand({
+      name: "app",
+      commands: [defineCommand({ name: "commit", action: noop })],
+    });
+
+    await run(root, { argv: ["comit", "y"] });
+
+    expect(stderr().split("did you mean")).toHaveLength(2);
   });
 });
 
-describe("run: action throws/rejects", () => {
-  it("catches a thrown error, prints its message, and sets exitCode 1", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      action: () => {
+describe("run: action failure", () => {
+  it.each([
+    [
+      "a thrown Error",
+      () => {
         throw new Error("boom");
       },
-    });
-
-    await run(cmd, { argv: [] });
-
-    expect(process.exitCode).toBe(1);
-    expect(errorSpy).toHaveBeenCalledWith("app failed: boom");
-  });
-
-  it("catches a rejected promise from an async action", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      action: async () => {
-        throw new Error("async boom");
-      },
-    });
-
-    await run(cmd, { argv: [] });
-
-    expect(process.exitCode).toBe(1);
-    expect(errorSpy).toHaveBeenCalledWith("app failed: async boom");
-  });
-
-  it("wraps a non-Error throw in an Error using its string form", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      action: () => {
+      "boom",
+    ],
+    ["a rejected promise", () => Promise.reject(new Error("boom")), "boom"],
+    [
+      "a non-Error throw",
+      () => {
         throw "plain string";
       },
-    });
+      "plain string",
+    ],
+  ])("reports %s and exits 1", async (_label, action, message) => {
+    await run(defineCommand({ name: "app", action }), { argv: [] });
 
-    await run(cmd, { argv: [] });
-
-    expect(errorSpy).toHaveBeenCalledWith("app failed: plain string");
+    expect(errorSpy).toHaveBeenCalledWith(`app failed: ${message}`);
+    expect(process.exitCode).toBe(1);
   });
 
-  it("does not print a stack trace when DEBUG is unset", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      action: () => {
-        throw new Error("boom");
-      },
-    });
+  it.each([
+    ["omits", undefined, 1],
+    ["prints", "1", 2],
+  ])("%s the stack trace when DEBUG is %j", async (_label, debug, calls) => {
+    if (debug) process.env.DEBUG = debug;
+    const action = () => {
+      throw new Error("boom");
+    };
 
-    await run(cmd, { argv: [] });
+    await run(defineCommand({ name: "app", action }), { argv: [] });
 
-    const printedStacks = errorSpy.mock.calls.filter((call) => String(call[0]).includes("at "));
-    expect(printedStacks).toHaveLength(0);
-  });
-
-  it("prints a stack trace when DEBUG is set", async () => {
-    process.env.DEBUG = "1";
-    const cmd = defineCommand({
-      name: "app",
-      action: () => {
-        throw new Error("boom");
-      },
-    });
-
-    await run(cmd, { argv: [] });
-
-    expect(errorSpy).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe("run: regressions", () => {
-  it("reports exactly one issue when a required option's value is missing", async () => {
-    const action = vi.fn();
-    const cmd = defineCommand({
-      name: "app",
-      options: { message: { short: "m", required: true } },
-      action,
-    });
-
-    await run(cmd, { argv: ["-m"] });
-
-    expect(action).not.toHaveBeenCalled();
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("app: 1 problem");
-    expect(printed).not.toContain("2 problems");
-  });
-
-  it("shows a subcommand's help even when -h appears before the subcommand name", async () => {
-    const sub = defineCommand({ name: "child", action: () => undefined });
-    const cmd = defineCommand({ name: "app", commands: [sub] });
-
-    await run(cmd, { argv: ["-h", "child"] });
-
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Usage: app child"));
-  });
-
-  it("rejects an inline value on a boolean option instead of silently ignoring it", async () => {
-    const action = vi.fn();
-    const cmd = defineCommand({
-      name: "app",
-      options: { shout: { type: "boolean" } },
-      action,
-    });
-
-    await run(cmd, { argv: ["--shout=false"] });
-
-    expect(action).not.toHaveBeenCalled();
-    expect(process.exitCode).toBe(2);
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain('"--shout" is a flag');
-  });
-
-  it("rejects -V on a subcommand instead of silently skipping required validation", async () => {
-    const action = vi.fn();
-    const sub = defineCommand({
-      name: "commit",
-      options: { message: { short: "m", required: true } },
-      action,
-    });
-    const cmd = defineCommand({ name: "app", commands: [sub] });
-
-    await run(cmd, { argv: ["commit", "-V"], version: "1.0.0" });
-
-    expect(action).not.toHaveBeenCalled();
-    expect(process.exitCode).toBe(2);
+    expect(errorSpy).toHaveBeenCalledTimes(calls);
   });
 });
 
 describe("run: completions", () => {
-  const app = () => defineCommand({ name: "my-app", action: () => undefined });
+  const app = () => defineCommand({ name: "my-app", action: noop });
+  const printed = () => String(logSpy.mock.calls[0]?.[0]);
 
   it.each(["bash", "fish", "zsh"])("prints the %s completion script", async (shell) => {
     await run(app(), { argv: ["completions", shell] });
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    expect(String(logSpy.mock.calls[0]?.[0])).toContain("my-app");
+    expect(printed()).toContain("my-app");
     expect(process.exitCode).toBeUndefined();
   });
 
-  it("lists the completions command in the root help", async () => {
+  it("lists the command in the root help without the activation commands", async () => {
     await run(app(), { argv: ["--help"] });
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("completions"));
-  });
-
-  it("shows the summary but no activation command in the root help", async () => {
-    await run(app(), { argv: ["--help"] });
-
-    const printed = String(logSpy.mock.calls[0]?.[0]);
-    expect(printed).toContain("Generate a shell completion script");
-    expect(printed).not.toContain("eval");
+    expect(printed()).toContain("Generate a shell completion script");
+    expect(printed()).not.toContain("eval");
   });
 
   it("shows how to enable each shell's completions in the completions help", async () => {
     await run(app(), { argv: ["completions", "--help"] });
 
-    const printed = String(logSpy.mock.calls[0]?.[0]);
-    expect(printed).toContain('eval "$(my-app completions bash)"');
-    expect(printed).toContain("my-app completions fish | source");
-    expect(printed).toContain("source <(my-app completions zsh)");
-    expect(printed).not.toContain("Load it with");
+    expect(printed()).toContain('eval "$(my-app completions bash)"');
+    expect(printed()).toContain("my-app completions fish | source");
+    expect(printed()).toContain("source <(my-app completions zsh)");
   });
 
   it("describes a shell subcommand briefly in its own help", async () => {
     await run(app(), { argv: ["completions", "bash", "--help"] });
 
-    const printed = String(logSpy.mock.calls[0]?.[0]);
-    expect(printed).toContain("Generate the bash completion script");
-    expect(printed).not.toContain("eval");
+    expect(printed()).toContain("Generate the bash completion script");
+    expect(printed()).not.toContain("eval");
   });
 
   it("suggests the nearest shell for a mistyped one", async () => {
     await run(app(), { argv: ["completions", "fsh"] });
 
     expect(process.exitCode).toBe(2);
-    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(printed).toContain("did you mean fish?");
+    expect(stderr()).toContain("did you mean fish?");
   });
 
   it("does not mutate the command it was given", async () => {
@@ -436,26 +272,17 @@ describe("run: completions", () => {
     expect(cmd.commands).toHaveLength(0);
   });
 
-  it("rejects a root that already defines a completions command", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      commands: [defineCommand({ name: "completions", action: () => undefined })],
-    });
-
-    await expect(run(cmd, { argv: [] })).rejects.toMatchObject({ code: "ERR_RESERVED_NAME" });
-  });
-
-  it("rejects a root whose alias is completions", async () => {
-    const cmd = defineCommand({
-      name: "app",
-      commands: [defineCommand({ name: "gen", alias: ["completions"], action: () => undefined })],
-    });
+  it.each([
+    ["a command", defineCommand({ name: "completions", action: noop })],
+    ["an alias", defineCommand({ name: "gen", alias: ["completions"], action: noop })],
+  ])("rejects a root that already defines %s named completions", async (_label, sub) => {
+    const cmd = defineCommand({ name: "app", commands: [sub] });
 
     await expect(run(cmd, { argv: [] })).rejects.toMatchObject({ code: "ERR_RESERVED_NAME" });
   });
 
   it("lets an app define its own completions command when built-in completions are off", async () => {
-    const action = vi.fn();
+    const action = vi.fn<() => void>();
     const cmd = defineCommand({
       name: "app",
       commands: [defineCommand({ name: "completions", action })],

@@ -12,16 +12,22 @@ describe("array inputs", () => {
     const readonlyAliases: readonly string[] = ["r"];
     const readonlySubs: readonly Command[] = [sub];
 
-    defineCommand({ name: "a", alias: ["m"], examples: ["--fast"], commands: [sub] });
-    defineCommand({ name: "b", alias: aliases, examples, commands: subs });
-    defineCommand({ name: "c", alias: readonlyAliases, commands: readonlySubs });
+    expectTypeOf(
+      defineCommand({ name: "a", alias: ["m"], examples: ["--fast"], commands: [sub] }),
+    ).toEqualTypeOf<Command>();
+    expectTypeOf(
+      defineCommand({ name: "b", alias: aliases, examples, commands: subs }),
+    ).toEqualTypeOf<Command>();
+    expectTypeOf(
+      defineCommand({ name: "c", alias: readonlyAliases, commands: readonlySubs }),
+    ).toEqualTypeOf<Command>();
   });
 
   it("reject values of the wrong element type", () => {
     // @ts-expect-error alias takes strings
-    defineCommand({ name: "a", alias: [1] });
+    expectTypeOf(defineCommand({ name: "a", alias: [1] })).toEqualTypeOf<Command>();
     // @ts-expect-error commands takes commands
-    defineCommand({ name: "b", commands: ["sub"] });
+    expectTypeOf(defineCommand({ name: "b", commands: ["sub"] })).toEqualTypeOf<Command>();
   });
 });
 
@@ -86,8 +92,9 @@ describe("action argument inference", () => {
       name: "t",
       options: { known: {} },
       action: ({ options }) => {
+        expectTypeOf(options).toHaveProperty("known");
         // @ts-expect-error `unknown` is not a declared option
-        void options.unknown;
+        expectTypeOf(options).toHaveProperty("unknown");
       },
     });
   });

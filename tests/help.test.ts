@@ -3,222 +3,148 @@ import { describe, expect, it } from "vitest";
 import { defineCommand } from "../src/command.js";
 import { help } from "../src/help.js";
 
+/** Runs `fn` with `process.stdout.columns` set to `columns`, restoring it afterwards. */
+function withColumns<T>(columns: number, fn: () => T): T {
+  const original = Object.getOwnPropertyDescriptor(process.stdout, "columns");
+  Object.defineProperty(process.stdout, "columns", { value: columns, configurable: true });
+  try {
+    return fn();
+  } finally {
+    if (original) Object.defineProperty(process.stdout, "columns", original);
+    else delete (process.stdout as { columns?: number }).columns;
+  }
+}
+
 describe("help: usage line", () => {
-  it("renders the bare command name with no options, commands, or positionals", () => {
-    const cmd = defineCommand({ name: "app" });
-    expect(help(cmd, ["app"])).toContain("Usage: app");
+  const sub = defineCommand({ name: "sub" });
+
+  it.each([
+    ["a bare command", defineCommand({ name: "app" }), "Usage: app\n"],
+    ["subcommands", defineCommand({ name: "app", commands: [sub] }), "Usage: app [command]\n"],
+    ["options", defineCommand({ name: "app", options: { env: {} } }), "Usage: app [options]\n"],
+    [
+      "required, optional, and variadic positionals",
+      defineCommand({
+        name: "app",
+        positionals: { file: { required: true }, tag: {}, rest: { multiple: true } },
+      }),
+      "Usage: app <file> [tag] [rest...]\n",
+    ],
+  ])("renders %s", (_label, cmd, expected) => {
+    expect(`${help(cmd, ["app"])}\n`).toContain(expected);
   });
 
-  it("adds [command] when subcommands exist", () => {
-    const cmd = defineCommand({ name: "app", commands: [defineCommand({ name: "sub" })] });
-    expect(help(cmd, ["app"])).toContain("Usage: app [command]");
-  });
-
-  it("adds [options] when options exist", () => {
-    const cmd = defineCommand({ name: "app", options: { env: {} } });
-    expect(help(cmd, ["app"])).toContain("Usage: app [options]");
-  });
-
-  it("renders a required positional as <name> and an optional one as [name]", () => {
-    const cmd = defineCommand({
-      name: "app",
-      positionals: { file: { required: true }, tag: {} },
-    });
-    expect(help(cmd, ["app"])).toContain("Usage: app <file> [tag]");
-  });
-
-  it("appends '...' to a variadic positional slot", () => {
-    const cmd = defineCommand({ name: "app", positionals: { files: { multiple: true } } });
-    expect(help(cmd, ["app"])).toContain("Usage: app [files...]");
-  });
-
-  it("joins a multi-level path for nested subcommands", () => {
-    const cmd = defineCommand({ name: "sub" });
-    expect(help(cmd, ["app", "sub"])).toContain("Usage: app sub");
+  it("joins the full path for a nested subcommand", () => {
+    expect(help(sub, ["app", "sub"])).toContain("Usage: app sub\n");
   });
 });
 
 describe("help: sections", () => {
-  it("includes the description when present", () => {
-    const cmd = defineCommand({ name: "app", description: "does things" });
-    expect(help(cmd, ["app"])).toContain("does things");
-  });
-
-  it("lists subcommands with their aliases and descriptions", () => {
+  it("lists subcommands with aliases, showing only the first line of each description", () => {
     const cmd = defineCommand({
       name: "app",
-      commands: [defineCommand({ name: "run", alias: ["r"], description: "runs it" })],
+      commands: [defineCommand({ name: "run", alias: ["r"], description: "runs it\n\ndetail" })],
     });
     const output = help(cmd, ["app"]);
-    expect(output).toContain("Commands:");
-    expect(output).toContain("run, r");
-    expect(output).toContain("runs it");
-  });
 
-  it("shows only the first line of a multi-line subcommand description in the parent's table", () => {
-    const sub = defineCommand({ name: "sub", description: "summary line\n\ndetail line" });
-    const output = help(defineCommand({ name: "app", commands: [sub] }), ["app"]);
-    expect(output).toContain("summary line");
-    expect(output).not.toContain("detail line");
+    expect(output).toContain("Commands:");
+    expect(output).toMatch(/run, r\s+runs it$/m);
+    expect(output).not.toContain("detail");
   });
 
   it("prints a multi-line description in full in the command's own help", () => {
-    const sub = defineCommand({ name: "sub", description: "summary line\n\ndetail line" });
-    expect(help(sub, ["app", "sub"])).toContain("summary line\n\ndetail line");
+    const cmd = defineCommand({ name: "sub", description: "summary line\n\ndetail line" });
+    expect(help(cmd, ["app", "sub"])).toContain("summary line\n\ndetail line");
   });
 
-  it("lists positionals with choices and default/required notes", () => {
+  it("lists positionals with their description, choices, and default or required note", () => {
     const cmd = defineCommand({
       name: "app",
       positionals: {
-        file: { required: true },
+        file: { required: true, description: "the input file" },
         mode: { choices: ["dev", "prod"], default: "dev" },
       },
     });
     const output = help(cmd, ["app"]);
+
     expect(output).toContain("Arguments:");
-    expect(output).toContain("(dev | prod)");
-    expect(output).toContain("(default: dev)");
-    expect(output).toContain("(required)");
+    expect(output).toMatch(/<file>\s+the input file \(required\)$/m);
+    expect(output).toMatch(/\[mode\]\s+\(dev \| prod\) \(default: dev\)$/m);
   });
 
-  it("lists examples under an Examples section, prefilling the command path", () => {
+  it("renders option flags by type, short form, and repeatability", () => {
     const cmd = defineCommand({
       name: "app",
-      examples: ["build --watch", "deploy prod"],
+      options: {
+        verbose: { type: "boolean", short: "v" },
+        quiet: { type: "boolean" },
+        env: {},
+        tag: { multiple: true },
+      },
     });
     const output = help(cmd, ["app"]);
-    expect(output).toContain("Examples:");
-    expect(output).toContain("app build --watch");
-    expect(output).toContain("app deploy prod");
-  });
 
-  it("includes a note alongside an example given as an [args, note] tuple", () => {
-    const cmd = defineCommand({
-      name: "app",
-      examples: [["build --watch", "rebuild on file changes"]],
-    });
-    const output = help(cmd, ["app"]);
-    expect(output).toContain("app build --watch");
-    expect(output).toContain("rebuild on file changes");
-  });
-
-  it("prefills the full nested path for a subcommand's examples", () => {
-    const cmd = defineCommand({ name: "sub", examples: ["--force"] });
-    expect(help(cmd, ["app", "sub"])).toContain("app sub --force");
-  });
-
-  it("omits the Examples section when no examples are given", () => {
-    const cmd = defineCommand({ name: "app" });
-    expect(help(cmd, ["app"])).not.toContain("Examples:");
-  });
-
-  it("includes a positional's own description alongside its other notes", () => {
-    const cmd = defineCommand({
-      name: "app",
-      positionals: { file: { required: true, description: "the input file" } },
-    });
-    expect(help(cmd, ["app"])).toContain("the input file");
-  });
-
-  it("renders a short flag column and marks a boolean option as --[no-]name", () => {
-    const cmd = defineCommand({
-      name: "app",
-      options: { verbose: { type: "boolean", short: "v" }, env: {} },
-    });
-    const output = help(cmd, ["app"]);
     expect(output).toContain("-v, --[no-]verbose");
+    expect(output).toContain("    --[no-]quiet");
     expect(output).toContain("--env <value>");
+    expect(output).toContain("--tag <value...>");
   });
 
-  it("marks a repeatable non-boolean option with <value...>", () => {
-    const cmd = defineCommand({ name: "app", options: { tag: { multiple: true } } });
-    expect(help(cmd, ["app"])).toContain("--tag <value...>");
+  it("prefills the command path in examples, with an optional note", () => {
+    const cmd = defineCommand({
+      name: "sub",
+      examples: ["--force", ["build --watch", "rebuild on file changes"]],
+    });
+    const output = help(cmd, ["app", "sub"]);
+
+    expect(output).toContain("Examples:");
+    expect(output).toContain("app sub --force");
+    expect(output).toMatch(/app sub build --watch\s+rebuild on file changes$/m);
   });
 
-  it("pads a boolean option's short-flag column when it has no short flag", () => {
-    const cmd = defineCommand({ name: "app", options: { verbose: { type: "boolean" } } });
-    expect(help(cmd, ["app"])).toContain("    --[no-]verbose");
+  it("omits the Examples section when there are none", () => {
+    expect(help(defineCommand({ name: "app" }), ["app"])).not.toContain("Examples:");
   });
 
-  it("always includes the -h, --help row", () => {
-    const cmd = defineCommand({ name: "app" });
-    expect(help(cmd, ["app"])).toContain("-h, --help");
-  });
-
-  it("includes -V, --version only at the root when a version string is given", () => {
-    const cmd = defineCommand({ name: "app" });
-    expect(help(cmd, ["app"], "1.0.0")).toContain("-V, --version");
-  });
-
-  it("omits -V, --version when no version string is given", () => {
-    const cmd = defineCommand({ name: "app" });
-    expect(help(cmd, ["app"])).not.toContain("-V, --version");
-  });
-
-  it("omits -V, --version for a nested subcommand even with a version string", () => {
-    const sub = defineCommand({ name: "sub" });
-    expect(help(sub, ["app", "sub"], "1.0.0")).not.toContain("-V, --version");
+  it.each([
+    ["-h, --help", ["app"], undefined, true],
+    ["-V, --version", ["app"], "1.0.0", true],
+    ["-V, --version", ["app"], undefined, false],
+    ["-V, --version", ["app", "sub"], "1.0.0", false],
+  ])("shows the %s row for path %j, version %j: %s", (row, path, version, shown) => {
+    const output = help(defineCommand({ name: "cmd" }), path, version);
+    expect(output.includes(row)).toBe(shown);
   });
 });
 
 describe("help: description wrapping", () => {
-  it("wraps a long description onto multiple lines under stdout.columns width", () => {
-    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
-    Object.defineProperty(process.stdout, "columns", { value: 60, configurable: true });
-    try {
-      const cmd = defineCommand({
-        name: "app",
-        options: {
-          env: {
-            description:
-              "sets the deployment environment used to pick config, secrets, and endpoints",
-          },
-        },
-      });
-      const lines = help(cmd, ["app"]).split("\n");
-      for (const line of lines) expect(line.length).toBeLessThanOrEqual(60);
-      expect(lines.some((l) => l.includes("sets the deployment"))).toBe(true);
-      expect(lines.some((l) => l.trim().startsWith("pick config"))).toBe(true);
-    } finally {
-      if (columns) Object.defineProperty(process.stdout, "columns", columns);
-      else delete (process.stdout as { columns?: number }).columns;
-    }
-  });
+  const helpWith = (description: string) =>
+    help(defineCommand({ name: "app", options: { env: { description } } }), ["app"]);
 
-  it("leaves a description unwrapped when the terminal is too narrow to wrap usefully", () => {
-    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
-    Object.defineProperty(process.stdout, "columns", { value: 10, configurable: true });
-    try {
-      const cmd = defineCommand({
-        name: "app",
-        options: { env: { description: "sets the deployment environment" } },
-      });
-      expect(help(cmd, ["app"])).toContain("sets the deployment environment");
-    } finally {
-      if (columns) Object.defineProperty(process.stdout, "columns", columns);
-      else delete (process.stdout as { columns?: number }).columns;
-    }
+  it("wraps a long description within stdout.columns", () => {
+    const lines = withColumns(60, () =>
+      helpWith("sets the deployment environment used to pick config, secrets, and endpoints").split(
+        "\n",
+      ),
+    );
+
+    expect(lines.every((line) => line.length <= 60)).toBe(true);
+    expect(lines.some((l) => l.includes("sets the deployment"))).toBe(true);
+    expect(lines.some((l) => l.trim().startsWith("pick config"))).toBe(true);
   });
 
   it("splits a single word longer than the available width instead of overflowing", () => {
-    const columns = Object.getOwnPropertyDescriptor(process.stdout, "columns");
-    Object.defineProperty(process.stdout, "columns", { value: 70, configurable: true });
-    try {
-      const cmd = defineCommand({
-        name: "app",
-        options: {
-          env: {
-            description:
-              "see https://example.com/a-very-long-url-that-cannot-fit-on-one-line-at-all-really",
-          },
-        },
-      });
-      const lines = help(cmd, ["app"]).split("\n");
-      for (const line of lines) expect(line.length).toBeLessThanOrEqual(70);
-    } finally {
-      if (columns) Object.defineProperty(process.stdout, "columns", columns);
-      else delete (process.stdout as { columns?: number }).columns;
-    }
+    const lines = withColumns(70, () =>
+      helpWith(
+        "see https://example.com/a-very-long-url-that-cannot-fit-on-one-line-at-all-really",
+      ).split("\n"),
+    );
+
+    expect(lines.every((line) => line.length <= 70)).toBe(true);
+  });
+
+  it("leaves a description unwrapped when the terminal is too narrow to wrap usefully", () => {
+    const output = withColumns(10, () => helpWith("sets the deployment environment"));
+    expect(output).toContain("sets the deployment environment");
   });
 });
