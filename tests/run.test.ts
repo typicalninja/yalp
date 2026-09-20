@@ -233,6 +233,19 @@ describe("run: parse failure + did-you-mean", () => {
     expect(printed).toContain('"mode" must be one of: dev, prod');
     expect(printed).toContain("did you mean dev?");
   });
+
+  it("suggests a choice for a positional named like an Object.prototype member", async () => {
+    const cmd = defineCommand({
+      name: "app",
+      positionals: { constructor: { choices: ["alpha", "beta"], required: true } },
+      action: () => undefined,
+    });
+
+    await run(cmd, { argv: ["alpa"] });
+
+    const printed = errorSpy.mock.calls.map((call) => call[0]).join("\n");
+    expect(printed).toContain("did you mean alpha?");
+  });
 });
 
 describe("run: action throws/rejects", () => {
