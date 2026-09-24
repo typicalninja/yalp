@@ -14,7 +14,6 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       // Barrel file: re-exports only, nothing to execute.
       exclude: ["src/index.ts"],
-      reporter: ["text", "html"],
       thresholds: {
         lines: 99,
         statements: 99,
