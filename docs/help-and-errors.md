@@ -108,7 +108,7 @@ When the environment variable `DEBUG` is set, the stack trace of a failed action
 
 | Code                           | Cause                                                                                                                                                             |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ERR_INVALID_NAME`             | A command, alias, option, or positional name is not kebab-case, or a `short` is not one letter.                                                                   |
+| `ERR_INVALID_NAME`             | A command, alias, or option name is not kebab-case, a positional name is malformed, or a `short` is not one letter.                                               |
 | `ERR_RESERVED_NAME`            | An option named `help` or `version`, an option starting with `no-`, or a `short` of `h` or `V`. Also thrown by `run` when the root command defines `completions`. |
 | `ERR_DUPLICATE_SUBCOMMAND`     | Two sibling commands share a name or alias.                                                                                                                       |
 | `ERR_DUPLICATE_OPTION`         | Two options of one command share a `short`.                                                                                                                       |

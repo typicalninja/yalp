@@ -12,7 +12,7 @@ export abstract class YalpError extends Error {
 
 /** Reasons a command definition is rejected. */
 export type ConfigErrorCode =
-  /** A name is not kebab-case, or a `short` is not one letter. */
+  /** A name is malformed, or a `short` is not one letter. */
   | "ERR_INVALID_NAME"
   /** Two sibling commands share a name or alias. */
   | "ERR_DUPLICATE_SUBCOMMAND"
