@@ -41,7 +41,9 @@ const cmd = defineCommand({
 
 ### Names
 
-Option and positional names are kebab-case, as command names are. A name such as `dry-run` is not a valid identifier, so the action reads it with brackets: `options["dry-run"]`.
+Option names are kebab-case, as command names are. A name such as `dry-run` is not a valid identifier, so the action reads it with brackets: `options["dry-run"]`.
+
+Positional names never appear on the command line, so any casing is allowed: a positional name starts with a letter and contains only letters, digits, `-`, and `_`. A camelCase name such as `inputFile` reads without brackets: `positionals.inputFile`.
 
 Reserved names:
 
