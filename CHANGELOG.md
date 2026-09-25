@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0]
+
+### Changed
+
+- Positional names accept any casing. A positional name starts with a letter and contains only letters, digits, `-`, and `_`. Option, command, and alias names are still kebab-case. ([#16])
+
+[1.2.0]: https://github.com/typicalninja/yalp/compare/v1.1.0...v1.2.0
+[#16]: https://github.com/typicalninja/yalp/pull/16
+
 ## [1.1.0]
 
 ### Added
