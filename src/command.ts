@@ -2,6 +2,8 @@ import { ConfigError, type ConfigErrorCode } from "./errors.js";
 import type { Param, ParamSpec, ParamValue } from "./parameter.js";
 
 const NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+// Positional names never appear on the command line, so any identifier-like name is allowed.
+const POSITIONAL_NAME = /^[a-zA-Z][\w-]*$/;
 const SHORT = /^[a-zA-Z]$/;
 const RESERVED = new Set(["help", "version"]);
 const RESERVED_SHORT = new Set(["h", "V"]);
@@ -105,8 +107,8 @@ function checkParam(kind: "option" | "positional", key: string, spec: ParamSpec)
  *
  * @param config - The command definition.
  * @returns The command.
- * @throws {ConfigError} When a name is not kebab-case, a name is reserved or duplicated,
- *   positionals are misordered, or a parameter's fields contradict each other.
+ * @throws {ConfigError} When a name is malformed, a name is reserved or duplicated, positionals are
+ *   misordered, or a parameter's fields contradict each other.
  */
 export function defineCommand<const O extends Specs = {}, const P extends Specs = {}>(config: {
   /** Command name. Kebab-case. */
@@ -119,7 +121,10 @@ export function defineCommand<const O extends Specs = {}, const P extends Specs 
   alias?: readonly string[];
   /** Options, keyed by kebab-case name. */
   options?: O;
-  /** Positional arguments, keyed by kebab-case name and filled in declaration order. */
+  /**
+   * Positional arguments, keyed by name and filled in declaration order. A name starts with a
+   * letter and contains only letters, digits, `-`, and `_`.
+   */
   positionals?: P;
   /** Subcommands. */
   commands?: readonly Command[];
@@ -153,7 +158,11 @@ export function defineCommand<const O extends Specs = {}, const P extends Specs 
 
   const positionals: Param[] = [];
   for (const [key, spec] of Object.entries(config.positionals ?? {})) {
-    check(NAME.test(key), "ERR_INVALID_NAME", `positional "${key}" must be kebab-case`);
+    check(
+      POSITIONAL_NAME.test(key),
+      "ERR_INVALID_NAME",
+      `positional "${key}" must start with a letter and contain only letters, digits, "-", or "_"`,
+    );
     check(!spec.short, "ERR_INVALID_PARAM", `positional "${key}" cannot have a short`);
     checkParam("positional", key, spec);
 
