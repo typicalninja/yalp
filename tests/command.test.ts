@@ -20,8 +20,8 @@ describe("defineCommand: names", () => {
       "ERR_INVALID_NAME",
     ],
     [
-      "a non-kebab-case positional key",
-      () => defineCommand({ name: "cli", positionals: { FileName: {} } }),
+      "a positional key with a separator character",
+      () => defineCommand({ name: "cli", positionals: { "file:name": {} } }),
       "ERR_INVALID_NAME",
     ],
     [
@@ -66,6 +66,12 @@ describe("defineCommand: names", () => {
         options: { "dry-run": {} },
         positionals: { "input-file": {} },
       }),
+    ).not.toThrow();
+  });
+
+  it("accepts camelCase and snake_case positional keys", () => {
+    expect(() =>
+      defineCommand({ name: "cli", positionals: { inputFile: {}, output_dir: {} } }),
     ).not.toThrow();
   });
 });
